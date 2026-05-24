@@ -1,0 +1,50 @@
+[project]
+name = "visual-gepa"
+version = "0.0.1"
+description = "Failure-Clustered Visual Reflection for prompt evolution on long-horizon computer-use agents"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "M1kezzZ" }]
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.40.0",
+    "openai>=1.30.0",
+    "pydantic>=2.7",
+    "python-dotenv>=1.0.1",
+    "numpy>=1.26",
+    "scikit-learn>=1.4",       # KMeans, MMR helpers
+    "Pillow>=10.0",
+    "tqdm>=4.66",
+    "pyyaml>=6.0",
+    # CLIP / SigLIP embeddings
+    "transformers>=4.45",
+    "sentence-transformers>=3.0",
+    # gepa is installed editable from third_party/gepa (submodule)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+    "ipykernel>=6.29",
+    "wandb>=0.17",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["visual_gepa"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = ["E501"]   # line length handled by formatter
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
