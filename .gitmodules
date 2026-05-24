@@ -1,0 +1,6 @@
+[submodule "third_party/gepa"]
+	path = third_party/gepa
+	url = https://github.com/M1kezzZ/gepa.git
+[submodule "third_party/OSWorld"]
+	path = third_party/OSWorld
+	url = https://github.com/xlang-ai/OSWorld.git
