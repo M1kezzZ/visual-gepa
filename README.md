@@ -3,7 +3,7 @@
 > **Failure-Clustered Visual Reflection (FCVR)** for prompt evolution on long-horizon multimodal computer-use agents.
 > Extension of [GEPA (ICLR 2026 Oral)](https://arxiv.org/abs/2507.19457) to OSWorld / WebArena.
 
-**Status**: Pre-Day-1 (name-reservation commit, 2026-05-24). Code drops over the next 6–8 weeks.
+**Status (2026-05-25)**: B0 plumbing smoke PASS — full FCVR pipeline (CLIP + KMeans + MMR + Claude Opus 4.7 vision + 5-field FCVRPatch + structured-prompt merge) verified end-to-end for $0.063. Raw result at `results/B0_smoke.json`. Audit verdict *partial* (mock env; real OSWorld migrates to B1). Code drops over the next 6–8 weeks.
 
 **Target venue**: NeurIPS 2026 workshop (primary) / ICML 2027 main (if signal warrants).
 
@@ -12,8 +12,8 @@
 | | |
 |---|---|
 | Method thesis | Visual-GEPA replaces GEPA's text-only random-sample reflection with **one** budget-constrained failure-trace compression operator (FCVR) — clustering by joint screenshot + error embedding, deterministic MMR key-frame compression, 5-field structured patches, named-section structured-prompt merge |
-| Backbone | **Qwen3.5-9B** (self-host BF16 on RTX 4090, or DashScope API) |
-| Reflection LM | **Claude Opus 4.7 (vision)** |
+| Backbone | **Qwen3.5-9B** (self-host BF16 on RTX 5090 32GB, or DashScope API) |
+| Reflection LM | **Claude Opus 4.7 vision** (Anthropic API or compatible proxy) |
 | Eval envs | OSWorld-Verified (primary) + WebArena (transfer + positioning) |
 | Reference paper | GEPA, [arxiv:2507.19457](https://arxiv.org/abs/2507.19457) |
 | Code dependency | [gepa-ai/gepa](https://github.com/gepa-ai/gepa) (Apache 2.0, vendored as git submodule) |
@@ -54,42 +54,55 @@ FCVR replaces exactly the reflection-input step that breaks, and nothing else. P
 ```
 visual-gepa/
 ├── README.md                      ← you are here
+├── CLAUDE.md                      ← operating rules + pointer to planning repo
 ├── LICENSE                        ← Apache 2.0
 ├── pyproject.toml
 ├── visual_gepa/                   ← THE contribution
 │   ├── __init__.py
-│   ├── fcvr.py                    ← FCVR operator (subclasses GEPA's ReflectiveProposer)
-│   ├── key_frame.py               ← MMR + action-boundary deterministic selector
-│   ├── patch_schema.py            ← 5-field Pydantic patch schema
-│   ├── structured_prompt.py       ← named-section prompt rendering
-│   ├── osworld_adapter.py         ← env ↔ trajectory bridge
-│   └── monitors/redundancy.py     ← cosine ≥ 0.85 LOO impact monitor
-├── scripts/                       ← B0–B7 entry points
-├── configs/                       ← per-block YAML configs
+│   ├── fcvr.py                    ← FCVR operator (CLIP → KMeans → MMR → 1 Claude call/cluster)
+│   ├── key_frame.py               ← deterministic MMR + action-boundary selector (no VLM call)
+│   ├── clip_embedder.py           ← HuggingFace CLIPModel wrapper
+│   ├── reflection.py              ← ClaudeReflectionClient (vision call → FCVRPatch)
+│   ├── patch_schema.py            ← 5-field strict Pydantic patch schema
+│   ├── structured_prompt.py       ← named-section [PERSONA]||[GLOBAL_RULES]||[BEHAVIORAL_PATCHES]||[TASK_SCAFFOLD]
+│   ├── osworld_adapter.py         ← real env ↔ trajectory bridge (B1+, needs KVM host)
+│   ├── mock_osworld_adapter.py    ← synthetic trajectories for B0 plumbing only
+│   └── monitors/redundancy.py     ← cosine ≥ 0.85 LOO impact monitor (B2+)
+├── scripts/B0_smoke.py            ← B0 orchestration (B1–B7 entry points land here)
+├── configs/osworld_smoke_5.json   ← 5 hand-picked task IDs for B0
 ├── third_party/
 │   ├── gepa/                      ← git submodule of gepa-ai/gepa (pinned commit)
-│   └── OSWorld/                   ← git submodule of xlang-ai/OSWorld
-└── results/                       ← gitignored
+│   └── OSWorld/                   ← git submodule of xlang-ai/OSWorld (pinned v0.1.16-574)
+└── results/                       ← gitignored EXCEPT for per-block summary JSONs
+    └── B0_smoke.json              ← canonical B0 evidence (audit-chain reference)
 ```
 
-## Quick start (post-Day-1)
+## Quick start
 
 ```bash
 git clone --recurse-submodules https://github.com/M1kezzZ/visual-gepa.git
 cd visual-gepa
-uv venv venv && source venv/bin/activate
-uv pip install -e ./third_party/gepa
-uv pip install -e .
+python -m venv venv && source venv/bin/activate   # python 3.11 or 3.12
+pip install -e .
 
-# Local vLLM (RTX 4090 24 GB recommended):
+# Reflection LM config (Anthropic API or compatible proxy):
+cat > .env <<EOF
+ANTHROPIC_API_KEY=sk-ant-...
+# Optional: route through a compatible gateway (e.g. AnyAIGC)
+# ANTHROPIC_BASE_URL=https://anyaigc.com
+EOF
+
+# B0 smoke (plumbing-only; mock OSWorld env so it runs without KVM/Docker):
+python scripts/B0_smoke.py \
+  --tasks configs/osworld_smoke_5.json \
+  --iterations 5 \
+  --output results/B0_smoke.json
+
+# B1+ — real OSWorld; needs vLLM serving Qwen3.5-9B and a KVM-capable host:
 vllm serve Qwen/Qwen3.5-9B --port 8000 --dtype bfloat16 --max-model-len 32768
-
-# B0 smoke:
-echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env
-python scripts/B0_smoke.py --tasks configs/osworld_smoke_5.json
 ```
 
-Full setup: see `SETUP.md` in the research-planning directory.
+Full server-side setup (AutoDL specifics, HF mirror, venv pin, etc.): see `CLAUDE.md` here and `SETUP.md` in the planning repo.
 
 ## Reproducibility
 
