@@ -97,6 +97,11 @@ def main() -> int:
     ap.add_argument("--provider", default="docker", choices=["docker", "vmware", "aws", "aliyun", "azure", "gcp"])
     ap.add_argument("--os-type", default="Ubuntu", choices=["Ubuntu", "Windows"])
     ap.add_argument("--max-steps", type=int, default=15)
+    ap.add_argument(
+        "--cache-dir",
+        default=None,
+        help="OSWorld cache dir (Ubuntu.qcow2.zip + per-task files). Defaults to ./osworld_cache.",
+    )
     ap.add_argument("--output", default="results/B1_smoke.json")
     args = ap.parse_args()
 
@@ -120,6 +125,7 @@ def main() -> int:
         os_type=args.os_type,
         max_steps=args.max_steps,
         headless=True,
+        cache_dir=args.cache_dir,
     )
 
     prompt = build_seed_prompt()

@@ -71,18 +71,22 @@ class MultimodalTrajectory:
 _CODE_BLOCK_RE = re.compile(r"```(?:python)?\s*\n?(.*?)```", re.S | re.I)
 _PYAUTOGUI_LINE_RE = re.compile(r"^\s*(pyautogui\.[A-Za-z_]+\(.*?\))\s*$", re.M)
 _SPECIAL_TOKEN_RE = re.compile(r"\b(WAIT|DONE|FAIL)\b", re.I)
+_THINK_TAG_RE = re.compile(r"<think\b[^>]*>.*?</think>", re.S | re.I)
 
 
 def parse_action(response_text: str) -> str:
     """Extract an OSWorld-executable action string from the model's reply.
 
     Order of preference:
-      1. Code block fenced by ``` (most common in trained models).
-      2. Bare `pyautogui.X(...)` line (Qwen sometimes skips the fence).
-      3. Special token WAIT / DONE / FAIL.
-      4. Fall through → return raw text trimmed (let OSWorld surface the error).
+      1. Strip any `<think>...</think>` reasoning wrapper (Qwen3.5 leaks these
+         even with `enable_thinking=False` per Codex review).
+      2. Code block fenced by ``` (most common in trained models).
+      3. Bare `pyautogui.X(...)` line (Qwen sometimes skips the fence).
+      4. Special token WAIT / DONE / FAIL.
+      5. Fall through → return raw text trimmed (let OSWorld surface the error).
     """
-    text = response_text.strip()
+    # Strip <think> blocks first so they don't confuse later matchers.
+    text = _THINK_TAG_RE.sub("", response_text).strip()
 
     m = _CODE_BLOCK_RE.search(text)
     if m:
@@ -237,6 +241,7 @@ class OSWorldAdapter:
         os_type: str = "Ubuntu",
         max_steps: int = 30,
         headless: bool = True,
+        cache_dir: str | Path | None = None,
     ) -> None:
         if task_config_path is None and task_dict is None:
             raise ValueError("provide either task_config_path or task_dict")
@@ -252,6 +257,13 @@ class OSWorldAdapter:
         self.os_type = os_type
         self.max_steps = max_steps
         self.headless = headless
+        # OSWorld DesktopEnv defaults `cache_dir` to "cache" (relative to CWD)
+        # and downloads Ubuntu.qcow2.zip to `./docker_vm_data` (also relative).
+        # Pin both to an absolute path so re-runs from different working
+        # directories don't trigger re-downloads (Codex review item P1-#6).
+        self.cache_dir = str(Path(cache_dir).resolve()) if cache_dir else str(
+            (Path.cwd() / "osworld_cache").resolve()
+        )
         self._env = None  # lazy
 
     def _ensure_env(self) -> None:
@@ -262,15 +274,17 @@ class OSWorldAdapter:
         from desktop_env.desktop_env import DesktopEnv
 
         logger.info(
-            "DesktopEnv init task_id=%s provider=%s os_type=%s",
+            "DesktopEnv init task_id=%s provider=%s os_type=%s cache_dir=%s",
             self.task_id,
             self.provider_name,
             self.os_type,
+            self.cache_dir,
         )
         self._env = DesktopEnv(
             provider_name=self.provider_name,
             os_type=self.os_type,
             headless=self.headless,
+            cache_dir=self.cache_dir,
         )
 
     # --- public API --------------------------------------------------------
