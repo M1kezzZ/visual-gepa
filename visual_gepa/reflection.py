@@ -45,15 +45,25 @@ Your task:
   4. Express the patch as a 5-field JSON object — described in the user prompt
      — and emit ONLY that JSON object, no prose.
 
-Hard constraints:
-  - failure_pattern: one sentence, ≤ 512 chars.
-  - visual_evidence: refer to specific frames; ≤ 1024 chars.
-  - prompt_diff: ONE additive instruction; ≤ 512 chars, natural language.
-  - scope_guard: one-line natural-language condition; ≤ 256 chars. NOT a
-    runtime router — just a clause like "When the LibreOffice Calc Pivot Table
-    dialog is open and …".
-  - expected_behavior_change: ONE sentence prediction; ≤ 512 chars.
-  - Output strictly a single JSON object. No markdown fences, no commentary.
+Hard constraints on the JSON object (ALL FIVE fields are PLAIN STRINGS, not
+objects, lists, or dicts):
+  - failure_pattern   : str, one sentence,  4–512  chars.
+  - visual_evidence   : str, refers to frames,  4–1024 chars.
+  - prompt_diff       : str, ONE additive natural-language instruction the
+                        agent should follow. 4–512 chars. Do NOT wrap it in
+                        {"added": [...], "removed": [...]} or any structure.
+                        Just one English sentence, exactly the text that
+                        will be appended verbatim to [BEHAVIORAL_PATCHES].
+  - scope_guard       : str, one-line condition,  4–256  chars. NOT a runtime
+                        router — a natural clause like "When the LibreOffice
+                        Calc Pivot Table dialog is open and …".
+  - expected_behavior_change : str, one sentence,  4–512  chars.
+
+Output strictly ONE JSON object with EXACTLY those five keys, all string
+values. No extra keys, no markdown fences, no leading or trailing prose.
+
+Example of the required shape (content is illustrative only):
+  {"failure_pattern":"...","visual_evidence":"...","prompt_diff":"...","scope_guard":"...","expected_behavior_change":"..."}
 """
 
 
@@ -105,6 +115,46 @@ def _pil_to_b64_png(image: Image.Image, max_side: int = 1024) -> str:
 
 
 _JSON_OBJECT_RE = re.compile(r"\{.*\}", re.S)
+
+
+def _coerce_patch_fields(obj: dict[str, Any]) -> dict[str, Any]:
+    """Defensively coerce the 5 patch fields to plain strings.
+
+    Claude occasionally returns `prompt_diff` as
+        {"added": [...], "removed": [...]}
+    or as a list of strings. We flatten these to a single string so Pydantic's
+    `str` constraint is met *without* an extra Claude call (which would
+    violate the FCVR K-budget invariant).
+    """
+    for key in (
+        "failure_pattern",
+        "visual_evidence",
+        "prompt_diff",
+        "scope_guard",
+        "expected_behavior_change",
+    ):
+        v = obj.get(key)
+        if v is None or isinstance(v, str):
+            continue
+        if isinstance(v, list):
+            obj[key] = " ".join(str(x) for x in v if x is not None).strip()
+            continue
+        if isinstance(v, dict):
+            parts: list[str] = []
+            for sub_key in ("added", "instruction", "text", "diff", "patch"):
+                sub = v.get(sub_key)
+                if isinstance(sub, str):
+                    parts.append(sub)
+                elif isinstance(sub, list):
+                    parts.extend(str(s) for s in sub if s)
+            if not parts:  # last resort: serialize
+                import json as _json
+                obj[key] = _json.dumps(v, ensure_ascii=False)[:512]
+            else:
+                obj[key] = " ".join(parts).strip()
+            continue
+        obj[key] = str(v)
+    return obj
 
 
 def _extract_json_object(text: str) -> dict[str, Any] | None:
@@ -266,6 +316,7 @@ class ClaudeReflectionClient:
                 last_error = "no JSON object in response"
                 attempt += 1
                 continue
+            obj = _coerce_patch_fields(obj)  # deterministic; not a retry
             try:
                 patch = FCVRPatch(**obj)
                 return patch, stats
