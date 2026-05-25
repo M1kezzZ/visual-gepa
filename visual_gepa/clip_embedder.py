@@ -87,7 +87,25 @@ class CLIPImageEmbedder:
 
         with torch.no_grad():
             inputs = self._processor(images=rgb_images, return_tensors="pt").to(self._device)
-            feats = self._model.get_image_features(**inputs)
+            out = self._model.get_image_features(**inputs)
+            # In transformers >= 4.46, get_image_features can return a
+            # BaseModelOutput-like wrapper instead of a raw tensor. Coerce.
+            if not isinstance(out, torch.Tensor):
+                for attr in ("image_embeds", "pooler_output", "last_hidden_state"):
+                    candidate = getattr(out, attr, None)
+                    if candidate is not None:
+                        feats = candidate
+                        break
+                else:  # no break → no known attr
+                    raise RuntimeError(
+                        f"Unexpected CLIP output type {type(out).__name__}; "
+                        "no image_embeds / pooler_output / last_hidden_state."
+                    )
+                # last_hidden_state is (B, T, D); pool over tokens.
+                if feats.dim() == 3:
+                    feats = feats.mean(dim=1)
+            else:
+                feats = out
             feats = feats / feats.norm(dim=-1, keepdim=True).clamp(min=1e-12)
         return feats.detach().to("cpu", dtype=torch.float32).numpy()
 
