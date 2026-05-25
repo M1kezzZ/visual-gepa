@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "description": "B1 smoke set — 5 real OSWorld tasks across diverse desktop apps. Parallels the 5-task structure of configs/osworld_smoke_5.json (mock) so the comparison stays apples-to-apples once the real OSWorldAdapter replaces the mock.",
+    "selection_rationale": "One task each from libreoffice_calc / chrome / libreoffice_writer / vs_code / gimp — same 5 apps as the mock smoke. First-in-domain task by UUID sort. Mixed expected difficulty.",
+    "split": "smoke_b1",
+    "expected_runtime_minutes": "30-60 (5 tasks × ~5-10 min each, depending on agent stalls)",
+    "expected_cost_usd": "~0 — vanilla Qwen3.5-9B agent only, no FCVR reflection yet (that's B2)"
+  },
+  "tasks": [
+    {
+      "id": "libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e",
+      "domain": "libreoffice_calc",
+      "uuid": "1954cced-e748-45c4-9c26-9855b97fbc5e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e.json"
+    },
+    {
+      "id": "chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0",
+      "domain": "chrome",
+      "uuid": "a728a36e-8bf1-4bb6-9a03-ef039a5233f0",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0.json"
+    },
+    {
+      "id": "libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568",
+      "domain": "libreoffice_writer",
+      "uuid": "8472fece-c7dd-4241-8d65-9b3cd1a0b568",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568.json"
+    },
+    {
+      "id": "vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994",
+      "domain": "vs_code",
+      "uuid": "5e2d93d8-8ad0-4435-b150-1692aacaa994",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994.json"
+    },
+    {
+      "id": "gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d",
+      "domain": "gimp",
+      "uuid": "7b7617bd-57cc-468e-9c91-40c4ec2bcb3d",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d.json"
+    }
+  ]
+}
