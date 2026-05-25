@@ -28,7 +28,7 @@ from .structured_prompt import StructuredPrompt
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_REFLECTION_MODEL = "claude-opus-4-5-20250929"  # placeholder for "Claude Opus 4.7 vision"
+DEFAULT_REFLECTION_MODEL = "claude-opus-4-7"  # Claude Opus 4.7 vision (current API id)
 DEFAULT_MAX_OUTPUT_TOKENS = 512
 
 
