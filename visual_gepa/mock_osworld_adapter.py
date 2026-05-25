@@ -22,6 +22,7 @@ nothing downstream changes.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import random
 from dataclasses import dataclass
@@ -33,6 +34,15 @@ from .osworld_adapter import MultimodalStep, MultimodalTrajectory
 from .structured_prompt import StructuredPrompt
 
 logger = logging.getLogger(__name__)
+
+
+def _stable_seed(*parts: object) -> int:
+    """Cross-process-stable 32-bit int seed (Python `hash()` is PYTHONHASHSEED-salted)."""
+    h = hashlib.sha256()
+    for p in parts:
+        h.update(repr(p).encode("utf-8"))
+        h.update(b"\x00")
+    return int.from_bytes(h.digest()[:4], "big")
 
 
 # Per-task scripted action sequences. Each entry: a list of (action_str, feedback, mark_failed).
@@ -47,6 +57,7 @@ _TASK_SCRIPTS: dict[str, dict[str, Any]] = {
             'times each "Invoice No." appears.'
         ),
         "app": "libreoffice_calc",
+        "aliases": ["libreoffice", "calc", "pivot", "spreadsheet", "sheet"],
         "color": (200, 220, 240),
         "title": "LibreOffice Calc — Invoices.xlsx",
         "actions": [
@@ -64,6 +75,7 @@ _TASK_SCRIPTS: dict[str, dict[str, Any]] = {
     "chrome_tab_close_dialog": {
         "instruction": "Close the modal dialog blocking google.com and search 'arxiv 2507.19457'.",
         "app": "chrome",
+        "aliases": ["chrome", "browser", "dialog", "modal", "google", "popup"],
         "color": (240, 240, 240),
         "title": "Chrome — Google",
         "actions": [
@@ -78,6 +90,7 @@ _TASK_SCRIPTS: dict[str, dict[str, Any]] = {
     "vlc_play_video": {
         "instruction": "Open the video file Bunny.mp4 from ~/Videos and play it.",
         "app": "vlc",
+        "aliases": ["vlc", "video", "media", "play", "movie", "player"],
         "color": (40, 40, 60),
         "title": "VLC media player",
         "actions": [
@@ -93,6 +106,7 @@ _TASK_SCRIPTS: dict[str, dict[str, Any]] = {
     "file_manager_rename": {
         "instruction": "Rename ~/Documents/report.txt to ~/Documents/report_final.txt.",
         "app": "files",
+        "aliases": ["file", "files", "rename", "explorer", "manager", "document"],
         "color": (250, 245, 230),
         "title": "Files — Documents",
         "actions": [
@@ -110,6 +124,7 @@ _TASK_SCRIPTS: dict[str, dict[str, Any]] = {
     "gimp_export_png": {
         "instruction": "Export the open GIMP image as ~/Pictures/out.png with default settings.",
         "app": "gimp",
+        "aliases": ["gimp", "export", "png", "image", "picture", "edit"],
         "color": (60, 60, 60),
         "title": "GIMP — Untitled.xcf",
         "actions": [
@@ -172,7 +187,9 @@ def _render_fake_screenshot(
         draw.rectangle([x, 38, x + 50, 50], fill=(150, 165, 180))
 
     # Pseudo content — colored rectangles that depend on step content.
-    seed = (hash(action) ^ hash(feedback) ^ step_idx) & 0xFFFFFFFF
+    # `_stable_seed` uses sha256 so the same (action, feedback, step) always
+    # produces the same image across processes / runs.
+    seed = _stable_seed("frame", action, feedback, step_idx)
     rng2 = random.Random(seed)
     for _ in range(20):
         x = rng2.randint(8, width - 80)
@@ -221,18 +238,22 @@ class MockOSWorldAdapter:
         loop. We simulate by checking if the parent prompt contains a "fix"
         substring matched to this task.
         """
-        rng = random.Random((hash(self.task_id) ^ self.rng_seed) & 0xFFFFFFFF)
+        rng = random.Random(_stable_seed("rollout", self.task_id, self.rng_seed))
         steps_def = list(self.script["actions"])
 
-        # Crude "patches help" signal — if any behavioral patch's scope_guard
-        # mentions this app/task, we shorten the trajectory and flip the
-        # failure flag. This lets B0 observe a learning signal across the 5
-        # GEPA iterations even with a synthetic env.
-        agent_helped = any(
-            self.task_id.split("_")[0] in (sg or "").lower()
-            or self.script["app"] in (pd or "").lower()
-            for sg, pd in prompt.behavioral_patches
-        )
+        # "Patches help" signal — any behavioral patch whose scope_guard OR
+        # prompt_diff mentions ANY alias for this task is treated as helpful.
+        # Aliases cover app name, task verb, file-type, common UI words. This
+        # makes the synthetic learning signal robust to Claude's free-form
+        # natural-language guards (the codex review flagged that the previous
+        # strict prefix match could miss matches).
+        aliases = [a.lower() for a in self.script.get("aliases", [])]
+        agent_helped = False
+        for sg, pd in prompt.behavioral_patches:
+            blob = ((sg or "") + " " + (pd or "")).lower()
+            if any(a in blob for a in aliases):
+                agent_helped = True
+                break
 
         steps: list[MultimodalStep] = []
         n = len(steps_def)

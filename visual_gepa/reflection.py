@@ -98,7 +98,7 @@ def _pil_to_b64_png(image: Image.Image, max_side: int = 1024) -> str:
     w, h = img.size
     if max(w, h) > max_side:
         scale = max_side / float(max(w, h))
-        img = img.resize((int(w * scale), int(h * scale)))
+        img = img.resize((max(1, int(w * scale)), max(1, int(h * scale))))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return base64.standard_b64encode(buf.getvalue()).decode("ascii")
@@ -138,10 +138,18 @@ class ClaudeReflectionClient:
         max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
         api_key: str | None = None,
         base_url: str | None = None,
-        schema_violation_retries: int = 1,
+        schema_violation_retries: int = 0,
     ) -> None:
+        if schema_violation_retries < 0:
+            raise ValueError(
+                f"schema_violation_retries must be >= 0, got {schema_violation_retries}"
+            )
         self.model = model
         self.max_output_tokens = max_output_tokens
+        # IMPORTANT: each retry is a second Claude call → violates the FCVR
+        # K-invariant T_total ≤ K · T_one_vanilla_reflection. Default 0 keeps
+        # the invariant honest. Set > 0 only for ablations where the budget
+        # claim is explicitly relaxed.
         self.schema_violation_retries = schema_violation_retries
         api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:

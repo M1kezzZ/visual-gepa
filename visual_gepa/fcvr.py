@@ -30,7 +30,6 @@ import numpy as np
 
 from .key_frame import action_boundaries, mmr_select
 from .patch_schema import FCVRPatch
-from .reflection import ReflectionCallStats
 from .structured_prompt import StructuredPrompt
 
 logger = logging.getLogger(__name__)

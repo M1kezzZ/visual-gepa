@@ -141,7 +141,9 @@ def run_one_iteration(
     failed_trajs = []
     for adapter in adapters:
         traj = adapter.run(prompt)
-        score, feedback = adapter.metric(traj)
+        # metric() return value is logged via traj.final_reward + terminal feedback below;
+        # the call here is kept for the side-effect of normalizing trajectories.
+        _score, _feedback = adapter.metric(traj)
         rec["tasks"].append(
             {
                 "task_id": traj.task_id,
@@ -322,6 +324,33 @@ def main() -> int:
     total_out_tokens = sum(
         it["fcvr"]["total_output_tokens"] for it in overall["iterations"]
     )
+    # Claude Opus 4.7 vision pricing (2026): $5 / Mtok in, $25 / Mtok out.
+    OPUS_PRICE_USD_PER_MTOK_IN = 5.0
+    OPUS_PRICE_USD_PER_MTOK_OUT = 25.0
+    api_cost_usd = round(
+        (total_in_tokens / 1_000_000) * OPUS_PRICE_USD_PER_MTOK_IN
+        + (total_out_tokens / 1_000_000) * OPUS_PRICE_USD_PER_MTOK_OUT,
+        4,
+    )
+
+    # Budget envelope check (B0 spec: "within 20% of expected"). Expected B0
+    # budget per EXPERIMENT_PLAN.md §4 M0 ≈ $20 ⇒ ceiling at 1.2 × = $24.
+    EXPECTED_USD = 20.0
+    BUDGET_CEILING_USD = EXPECTED_USD * 1.2
+    budget_within_20pct = api_cost_usd <= BUDGET_CEILING_USD
+
+    # Cache initialization check — CLIP embedder was lazy-loaded if any
+    # encode_* call ran; we proxy that by "CLIP produced at least one
+    # non-zero embedding". Any FCVR call that completed implies this.
+    cache_initialized = total_patches_landed > 0 or any(
+        it["fcvr"]["n_clusters_used"] > 0 for it in overall["iterations"]
+    )
+
+    all_episodes_completed = all(
+        len(it["tasks"]) == len(adapters) for it in overall["iterations"]
+    )
+    at_least_one_valid_patch_landed = total_patches_landed >= 1
+
     overall["summary"] = {
         "n_iters_completed": n_iters,
         "total_patches_landed": total_patches_landed,
@@ -329,24 +358,32 @@ def main() -> int:
         "final_n_tasks": len(adapters),
         "total_input_tokens": total_in_tokens,
         "total_output_tokens": total_out_tokens,
-        "approx_total_api_cost_usd_at_opus_pricing": round(
-            (total_in_tokens / 1_000_000) * 15.0
-            + (total_out_tokens / 1_000_000) * 75.0,
-            4,
-        ),
+        "approx_total_api_cost_usd_at_opus_pricing": api_cost_usd,
+        "expected_cost_usd": EXPECTED_USD,
+        "budget_ceiling_usd": BUDGET_CEILING_USD,
         "pass_criteria_met": {
-            "all_episodes_completed": (
-                all(len(it["tasks"]) == len(adapters) for it in overall["iterations"])
-            ),
-            "at_least_one_valid_patch_landed": total_patches_landed >= 1,
-            "no_iter_crashed": True,  # would have raised before reaching here
+            "all_episodes_completed": all_episodes_completed,
+            "at_least_one_valid_patch_landed": at_least_one_valid_patch_landed,
+            "no_iter_crashed": True,  # any crash would have raised before here
+            "cache_initialized": cache_initialized,
+            "budget_within_20pct": budget_within_20pct,
         },
     }
+    overall["summary"]["pass_criteria_met"]["overall"] = all(
+        overall["summary"]["pass_criteria_met"][k]
+        for k in (
+            "all_episodes_completed",
+            "at_least_one_valid_patch_landed",
+            "no_iter_crashed",
+            "cache_initialized",
+            "budget_within_20pct",
+        )
+    )
 
     out_path.write_text(json.dumps(overall, indent=2, ensure_ascii=False))
     logger.info("wrote %s", out_path)
     logger.info("summary: %s", json.dumps(overall["summary"], indent=2))
-    return 0
+    return 0 if overall["summary"]["pass_criteria_met"]["overall"] else 2
 
 
 if __name__ == "__main__":

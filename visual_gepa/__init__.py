@@ -12,12 +12,16 @@ Public exports (stable across B0 → B7):
 
 __version__ = "0.0.1"
 
+from .clip_embedder import CLIPImageEmbedder
 from .fcvr import DEFAULT_BUDGET, FCVRBudget, FCVROperator
 from .osworld_adapter import MultimodalStep, MultimodalTrajectory, OSWorldAdapter
 from .patch_schema import FCVRPatch
+from .reflection import ClaudeReflectionClient
 from .structured_prompt import StructuredPrompt
 
 __all__ = [
+    "CLIPImageEmbedder",
+    "ClaudeReflectionClient",
     "DEFAULT_BUDGET",
     "FCVRBudget",
     "FCVROperator",

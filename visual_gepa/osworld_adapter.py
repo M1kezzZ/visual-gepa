@@ -8,7 +8,6 @@ implementation depends on the OSWorld version pinned in third_party/OSWorld.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 from PIL import Image
 
