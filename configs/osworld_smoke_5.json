@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "description": "B0 smoke: 5 hand-picked OSWorld-like tasks (mock env). Spans diverse apps and trajectory lengths so KMeans + MMR + reflection have non-degenerate inputs.",
+    "note": "Mock adapter for B0 only (AutoDL container has no KVM/Docker). Real OSWorldAdapter replaces this in B1 when we move to a KVM-capable host.",
+    "split": "smoke",
+    "expected_failures_per_seed": 3,
+    "expected_successes_per_seed": 2
+  },
+  "tasks": [
+    {
+      "id": "libreoffice_calc_pivot",
+      "app": "libreoffice_calc",
+      "instruction": "Create a Pivot Table in a new sheet (Sheet2) to count how many times each \"Invoice No.\" appears.",
+      "real_osworld_task_id": "1954cced-e748-45c4-9c26-9855b97fbc5e"
+    },
+    {
+      "id": "chrome_tab_close_dialog",
+      "app": "chrome",
+      "instruction": "Close the modal dialog blocking google.com and search 'arxiv 2507.19457'.",
+      "real_osworld_task_id": "<synthetic>"
+    },
+    {
+      "id": "vlc_play_video",
+      "app": "vlc",
+      "instruction": "Open the video file Bunny.mp4 from ~/Videos and play it.",
+      "real_osworld_task_id": "<synthetic>"
+    },
+    {
+      "id": "file_manager_rename",
+      "app": "files",
+      "instruction": "Rename ~/Documents/report.txt to ~/Documents/report_final.txt.",
+      "real_osworld_task_id": "<synthetic>"
+    },
+    {
+      "id": "gimp_export_png",
+      "app": "gimp",
+      "instruction": "Export the open GIMP image as ~/Pictures/out.png with default settings.",
+      "real_osworld_task_id": "<synthetic>"
+    }
+  ]
+}
