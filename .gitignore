@@ -45,9 +45,12 @@ uv.lock
 htmlcov/
 .tox/
 
-# IDE
+# IDE / local tooling state (regeneratable, not source-of-truth)
 .vscode/
 .idea/
+.cursor/
+.codex/
+.codegraph/
 *.swp
 *.swo
 .DS_Store
