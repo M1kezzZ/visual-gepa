@@ -1,0 +1,406 @@
+{
+  "B0_smoke": true,
+  "started_at": "2026-05-25T06:35:20.814384Z",
+  "config": {
+    "iterations": 5,
+    "K": 4,
+    "J": 3,
+    "M": 2,
+    "T_patch": 512,
+    "rng_seed": 42,
+    "clip_model": "/root/autodl-tmp/models/clip-vit-base-patch32",
+    "reflection_model": "claude-opus-4-7",
+    "backbone_endpoint": "http://localhost:8000/v1",
+    "backbone_model": "Qwen/Qwen3.5-9B",
+    "tasks": [
+      "libreoffice_calc_pivot",
+      "chrome_tab_close_dialog",
+      "vlc_play_video",
+      "file_manager_rename",
+      "gimp_export_png"
+    ]
+  },
+  "vllm_probe": null,
+  "iterations": [
+    {
+      "iteration": 1,
+      "tasks": [
+        {
+          "task_id": "libreoffice_calc_pivot",
+          "n_steps": 8,
+          "final_reward": 0.0,
+          "succeeded": false,
+          "terminal_feedback": "pivot exists but not in Sheet2 as required; failed to satisfy task"
+        },
+        {
+          "task_id": "chrome_tab_close_dialog",
+          "n_steps": 5,
+          "final_reward": 0.0,
+          "succeeded": false,
+          "terminal_feedback": "8 retries elapsed without dismissing dialog"
+        },
+        {
+          "task_id": "vlc_play_video",
+          "n_steps": 6,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: video playing"
+        },
+        {
+          "task_id": "file_manager_rename",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: file renamed"
+        },
+        {
+          "task_id": "gimp_export_png",
+          "n_steps": 7,
+          "final_reward": 0.0,
+          "succeeded": false,
+          "terminal_feedback": "button never clicked — task incomplete"
+        }
+      ],
+      "n_succeeded": 2,
+      "n_failed": 3,
+      "fcvr": {
+        "n_failed_input": 3,
+        "n_clusters_used": 3,
+        "cluster_sizes": [
+          1,
+          1,
+          1
+        ],
+        "patches": [
+          {
+            "failure_pattern": "Agent repeatedly clicks the same coordinate without verifying that a modal dialog is present or identifying its dismiss button.",
+            "visual_evidence": "All three frames show the agent clicking x=400, y=300 with observation 'dialog blocks input', yet the colored rectangles (representing UI elements) shift positions across frames, indicating the dialog layout is not static. No attempt is made to locate a close button, 'X', or 'OK' control.",
+            "prompt_diff": "When a modal dialog blocks interaction, first identify the dialog's dismiss control (close button, 'X', 'OK', 'Cancel', or Escape key) by reading visible UI elements before clicking.",
+            "scope_guard": "When the observation reports 'dialog blocks input' or a modal overlay is detected.",
+            "expected_behavior_change": "Agent will locate and click the actual dismiss control instead of retrying a fixed coordinate, successfully closing dialogs on the first or second attempt."
+          },
+          {
+            "failure_pattern": "Agent created the Pivot Table in the original sheet instead of a new sheet named Sheet2.",
+            "visual_evidence": "All three frames show the title bar 'LibreOffice Calc — Invoices.xlsx' with no visible sheet tabs or evidence of navigation to a second sheet. Frame 3 shows the Pivot Table dialog with fields being dragged, but the agent never created or switched to Sheet2 before building the pivot.",
+            "prompt_diff": "When a task requires creating a Pivot Table in a specific new sheet, first create and navigate to that sheet before opening the Pivot Table dialog.",
+            "scope_guard": "When the task explicitly requires a Pivot Table to be placed in a named new sheet (e.g., Sheet2).",
+            "expected_behavior_change": "Agent will right-click the sheet tab area, select 'Insert Sheet', name it as required, confirm it is active, then proceed with Pivot Table creation."
+          },
+          {
+            "failure_pattern": "Agent clicks the Export button but then fails to confirm the export in the PNG options dialog that opens.",
+            "visual_evidence": "Frame 2 shows a new PNG export options dialog opened after clicking Export at (440,520). Frame 3 shows the agent clicking at (300,520) with observation 'no effect, button missed by 20px', indicating the confirmation button in the PNG dialog was not successfully clicked despite two attempts at the same coordinate.",
+            "prompt_diff": "When an export or save dialog opens a secondary options dialog, locate and click the confirmation button in the new dialog rather than repeating clicks at the previous dialog's button coordinates.",
+            "scope_guard": "When a file export action opens a secondary format-options dialog in GIMP or similar applications.",
+            "expected_behavior_change": "Agent will recognize the new dialog, locate its Export/OK button visually, and click it to complete the export instead of retrying stale coordinates from the previous dialog."
+          }
+        ],
+        "reflection_stats": [
+          {
+            "cluster_id": 0,
+            "cluster_size": 1,
+            "input_tokens": 2667,
+            "output_tokens": 293,
+            "cache_input_tokens": 0,
+            "latency_s": 12.28,
+            "schema_violations": 0,
+            "error": null
+          },
+          {
+            "cluster_id": 1,
+            "cluster_size": 1,
+            "input_tokens": 2737,
+            "output_tokens": 306,
+            "cache_input_tokens": 0,
+            "latency_s": 12.984,
+            "schema_violations": 0,
+            "error": null
+          },
+          {
+            "cluster_id": 2,
+            "cluster_size": 1,
+            "input_tokens": 2698,
+            "output_tokens": 305,
+            "cache_input_tokens": 0,
+            "latency_s": 10.686,
+            "schema_violations": 0,
+            "error": null
+          }
+        ],
+        "total_input_tokens": 8102,
+        "total_output_tokens": 904,
+        "total_latency_s": 35.95,
+        "schema_violations_total": 0,
+        "elapsed_s": 41.933
+      },
+      "len_prompt_tokens_after": 365,
+      "n_behavioral_patches_after": 3
+    },
+    {
+      "iteration": 2,
+      "tasks": [
+        {
+          "task_id": "libreoffice_calc_pivot",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) pivot exists but not in Sheet2 as required; failed to satisfy task"
+        },
+        {
+          "task_id": "chrome_tab_close_dialog",
+          "n_steps": 5,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) 8 retries elapsed without dismissing dialog"
+        },
+        {
+          "task_id": "vlc_play_video",
+          "n_steps": 6,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: video playing"
+        },
+        {
+          "task_id": "file_manager_rename",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: file renamed"
+        },
+        {
+          "task_id": "gimp_export_png",
+          "n_steps": 7,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) button never clicked — task incomplete"
+        }
+      ],
+      "n_succeeded": 5,
+      "n_failed": 0,
+      "fcvr": {
+        "n_failed_input": 0,
+        "n_clusters_used": 0,
+        "cluster_sizes": [],
+        "patches": [],
+        "reflection_stats": [],
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
+        "total_latency_s": 0.0,
+        "schema_violations_total": 0,
+        "elapsed_s": 0.0
+      },
+      "len_prompt_tokens_after": 365,
+      "n_behavioral_patches_after": 3
+    },
+    {
+      "iteration": 3,
+      "tasks": [
+        {
+          "task_id": "libreoffice_calc_pivot",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) pivot exists but not in Sheet2 as required; failed to satisfy task"
+        },
+        {
+          "task_id": "chrome_tab_close_dialog",
+          "n_steps": 5,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) 8 retries elapsed without dismissing dialog"
+        },
+        {
+          "task_id": "vlc_play_video",
+          "n_steps": 6,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: video playing"
+        },
+        {
+          "task_id": "file_manager_rename",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: file renamed"
+        },
+        {
+          "task_id": "gimp_export_png",
+          "n_steps": 7,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) button never clicked — task incomplete"
+        }
+      ],
+      "n_succeeded": 5,
+      "n_failed": 0,
+      "fcvr": {
+        "n_failed_input": 0,
+        "n_clusters_used": 0,
+        "cluster_sizes": [],
+        "patches": [],
+        "reflection_stats": [],
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
+        "total_latency_s": 0.0,
+        "schema_violations_total": 0,
+        "elapsed_s": 0.0
+      },
+      "len_prompt_tokens_after": 365,
+      "n_behavioral_patches_after": 3
+    },
+    {
+      "iteration": 4,
+      "tasks": [
+        {
+          "task_id": "libreoffice_calc_pivot",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) pivot exists but not in Sheet2 as required; failed to satisfy task"
+        },
+        {
+          "task_id": "chrome_tab_close_dialog",
+          "n_steps": 5,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) 8 retries elapsed without dismissing dialog"
+        },
+        {
+          "task_id": "vlc_play_video",
+          "n_steps": 6,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: video playing"
+        },
+        {
+          "task_id": "file_manager_rename",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: file renamed"
+        },
+        {
+          "task_id": "gimp_export_png",
+          "n_steps": 7,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) button never clicked — task incomplete"
+        }
+      ],
+      "n_succeeded": 5,
+      "n_failed": 0,
+      "fcvr": {
+        "n_failed_input": 0,
+        "n_clusters_used": 0,
+        "cluster_sizes": [],
+        "patches": [],
+        "reflection_stats": [],
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
+        "total_latency_s": 0.0,
+        "schema_violations_total": 0,
+        "elapsed_s": 0.0
+      },
+      "len_prompt_tokens_after": 365,
+      "n_behavioral_patches_after": 3
+    },
+    {
+      "iteration": 5,
+      "tasks": [
+        {
+          "task_id": "libreoffice_calc_pivot",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) pivot exists but not in Sheet2 as required; failed to satisfy task"
+        },
+        {
+          "task_id": "chrome_tab_close_dialog",
+          "n_steps": 5,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) 8 retries elapsed without dismissing dialog"
+        },
+        {
+          "task_id": "vlc_play_video",
+          "n_steps": 6,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: video playing"
+        },
+        {
+          "task_id": "file_manager_rename",
+          "n_steps": 8,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "task completed: file renamed"
+        },
+        {
+          "task_id": "gimp_export_png",
+          "n_steps": 7,
+          "final_reward": 1.0,
+          "succeeded": true,
+          "terminal_feedback": "(patched) button never clicked — task incomplete"
+        }
+      ],
+      "n_succeeded": 5,
+      "n_failed": 0,
+      "fcvr": {
+        "n_failed_input": 0,
+        "n_clusters_used": 0,
+        "cluster_sizes": [],
+        "patches": [],
+        "reflection_stats": [],
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
+        "total_latency_s": 0.0,
+        "schema_violations_total": 0,
+        "elapsed_s": 0.0
+      },
+      "len_prompt_tokens_after": 365,
+      "n_behavioral_patches_after": 3
+    }
+  ],
+  "elapsed_s_total": 42.383,
+  "final_prompt": {
+    "persona": "You are an autonomous computer-use agent. You see desktop screenshots and produce pyautogui-style actions to satisfy the user's task.",
+    "global_rules": "1. Read the entire visible screen before acting.\n2. Prefer keyboard shortcuts when reliable (Ctrl+S, Alt+Tab, etc.).\n3. After every click, verify the expected UI state change in the next screenshot before continuing.\n4. If a step has no effect, do not retry the same coordinate more than twice; replan instead.",
+    "behavioral_patches": [
+      [
+        "When the observation reports 'dialog blocks input' or a modal overlay is detected.",
+        "When a modal dialog blocks interaction, first identify the dialog's dismiss control (close button, 'X', 'OK', 'Cancel', or Escape key) by reading visible UI elements before clicking."
+      ],
+      [
+        "When the task explicitly requires a Pivot Table to be placed in a named new sheet (e.g., Sheet2).",
+        "When a task requires creating a Pivot Table in a specific new sheet, first create and navigate to that sheet before opening the Pivot Table dialog."
+      ],
+      [
+        "When a file export action opens a secondary format-options dialog in GIMP or similar applications.",
+        "When an export or save dialog opens a secondary options dialog, locate and click the confirmation button in the new dialog rather than repeating clicks at the previous dialog's button coordinates."
+      ]
+    ],
+    "task_scaffold": "TASK: {instruction}\nProduce one pyautogui action per step. When complete, emit `DONE`. If the task is infeasible, emit `FAIL`.",
+    "rendered": "[PERSONA]\nYou are an autonomous computer-use agent. You see desktop screenshots and produce pyautogui-style actions to satisfy the user's task.\n\n[GLOBAL_RULES]\n1. Read the entire visible screen before acting.\n2. Prefer keyboard shortcuts when reliable (Ctrl+S, Alt+Tab, etc.).\n3. After every click, verify the expected UI state change in the next screenshot before continuing.\n4. If a step has no effect, do not retry the same coordinate more than twice; replan instead.\n\n[BEHAVIORAL_PATCHES]\nWhen When the observation reports 'dialog blocks input' or a modal overlay is detected.: When a modal dialog blocks interaction, first identify the dialog's dismiss control (close button, 'X', 'OK', 'Cancel', or Escape key) by reading visible UI elements before clicking.\nWhen When the task explicitly requires a Pivot Table to be placed in a named new sheet (e.g., Sheet2).: When a task requires creating a Pivot Table in a specific new sheet, first create and navigate to that sheet before opening the Pivot Table dialog.\nWhen When a file export action opens a secondary format-options dialog in GIMP or similar applications.: When an export or save dialog opens a secondary options dialog, locate and click the confirmation button in the new dialog rather than repeating clicks at the previous dialog's button coordinates.\n\n[TASK_SCAFFOLD]\nTASK: {instruction}\nProduce one pyautogui action per step. When complete, emit `DONE`. If the task is infeasible, emit `FAIL`.",
+    "n_patches": 3,
+    "approx_token_length": 365
+  },
+  "finished_at": "2026-05-25T06:36:03.197730Z",
+  "summary": {
+    "n_iters_completed": 5,
+    "total_patches_landed": 3,
+    "final_n_succeeded": 5,
+    "final_n_tasks": 5,
+    "total_input_tokens": 8102,
+    "total_output_tokens": 904,
+    "approx_total_api_cost_usd_at_opus_pricing": 0.0631,
+    "expected_cost_usd": 20.0,
+    "budget_ceiling_usd": 24.0,
+    "pass_criteria_met": {
+      "all_episodes_completed": true,
+      "at_least_one_valid_patch_landed": true,
+      "no_iter_crashed": true,
+      "cache_initialized": true,
+      "budget_within_20pct": true,
+      "overall": true
+    }
+  }
+}

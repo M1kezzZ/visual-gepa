@@ -53,7 +53,19 @@ htmlcov/
 .DS_Store
 
 # Project-specific
-results/
+# Raw experiment outputs are local-only, EXCEPT for the small summary JSONs
+# that the audit chain in visual-gepa-research/refine-logs/ cites. Those are
+# tracked so the public code repo carries the canonical evidence pointer.
+# Note: must be `results/*` (not `results/`) for the !exception to apply.
+results/*
+!results/B0_smoke.json
+!results/B1_*.json
+!results/B2_*.json
+!results/B3_*.json
+!results/B4_*.json
+!results/B5_*.json
+!results/B6_*.json
+!results/B7_*.json
 runs/
 wandb/
 *.log
