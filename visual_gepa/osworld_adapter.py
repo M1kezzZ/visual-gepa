@@ -272,6 +272,20 @@ class OSWorldAdapter:
         # Lazy import — host without OSWorld submodule (e.g. local laptop)
         # can still `import visual_gepa.osworld_adapter` for type checks.
         from desktop_env.desktop_env import DesktopEnv
+        from desktop_env.providers.docker import manager as docker_manager
+
+        # OSWorld stores TWO independent caches relative to CWD by default:
+        #   ./cache/<task_id>/...                 (per-task setup files)
+        #   ./docker_vm_data/Ubuntu.qcow2.zip    (10-20 GB VM image)
+        # The DesktopEnv ctor only takes cache_dir for the first; the
+        # second is the module-level constant `manager.VMS_DIR` (codex
+        # B1.2 review flagged this gap). Monkey-patch it onto our
+        # cache_dir so re-runs from different CWDs don't re-download.
+        if self.provider_name == "docker":
+            vms_dir = str(Path(self.cache_dir) / "docker_vm_data")
+            Path(vms_dir).mkdir(parents=True, exist_ok=True)
+            docker_manager.VMS_DIR = vms_dir
+            logger.info("pinned docker VMS_DIR=%s", vms_dir)
 
         logger.info(
             "DesktopEnv init task_id=%s provider=%s os_type=%s cache_dir=%s",
