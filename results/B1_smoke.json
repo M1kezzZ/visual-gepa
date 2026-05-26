@@ -1,0 +1,136 @@
+{
+  "B1_smoke": true,
+  "started_at": "2026-05-26T06:18:22.996639Z",
+  "finished_at": "2026-05-26T06:25:51.901143Z",
+  "elapsed_s": 448.904,
+  "config": {
+    "task_id": "1954cced-e748-45c4-9c26-9855b97fbc5e",
+    "task_instruction": "Create a Pivot Table in a new sheet (Sheet2) to count how many times each \"Invoice No.\" appears.",
+    "backbone_endpoint": "http://127.0.0.1:8000/v1",
+    "backbone_model": "/root/models/Qwen3.5-9B",
+    "provider": "docker",
+    "os_type": "Ubuntu",
+    "max_steps": 15
+  },
+  "crashed_with": null,
+  "trajectory": {
+    "n_steps": 15,
+    "final_reward": 0.0,
+    "succeeded": false,
+    "score": 0.0,
+    "feedback": "task_id=1954cced-e748-45c4-9c26-9855b97fbc5e succeeded=False n_steps=15\naction_trace_summary: 1.pyautogui.click(x=100, y=70) | 2.pyautogui.click(x=55, y=92) | 3.pyautogui.click(x=218, y=70) | 4.pyautogui.click(x=139, y=139) | 5.pyautogui.click(x=139, y=139) | 6.pyautogui.click(x=139, y=139) | 7.pyautogui.click(x=139, y=139) | 8.pyautogui.click(x=139, y=139) | 9.pyautogui.click(x=139, y=139) | 10.pyautogui.click(x=139, y=139) | 11.pyautogui.click(x=139, y=139) | 12.pyautogui.click(x=139, y=139) | 13.pyautogui.click(x=139, y=139) | 14.pyautogui.click(x=139, y=139) | 15.pyautogui.click(x=139, y=139)\nterminal_feedback: (no terminal feedback)",
+    "steps": [
+      {
+        "i": 0,
+        "action": "pyautogui.click(x=100, y=70)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1007850
+      },
+      {
+        "i": 1,
+        "action": "pyautogui.click(x=55, y=92)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037841
+      },
+      {
+        "i": 2,
+        "action": "pyautogui.click(x=218, y=70)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037304
+      },
+      {
+        "i": 3,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1039348
+      },
+      {
+        "i": 4,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037288
+      },
+      {
+        "i": 5,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 6,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 7,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 8,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 9,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 10,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 11,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 12,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 13,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      },
+      {
+        "i": 14,
+        "action": "pyautogui.click(x=139, y=139)",
+        "reward": 0,
+        "feedback": "",
+        "axtree_len": 1037664
+      }
+    ]
+  },
+  "pass_criteria_met": {
+    "ran_at_least_one_step": true,
+    "no_crash": true,
+    "got_numeric_reward": true,
+    "overall": true
+  }
+}
