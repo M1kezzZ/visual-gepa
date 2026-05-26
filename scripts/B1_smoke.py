@@ -172,6 +172,7 @@ def main() -> int:
                 {
                     "i": i,
                     "action": (s.action or "")[:512],
+                    "raw_model_text": (s.raw_model_text or "")[:2000],
                     "reward": s.reward,
                     "feedback": (s.feedback or "")[:512],
                     "axtree_len": len(s.accessibility_tree or ""),

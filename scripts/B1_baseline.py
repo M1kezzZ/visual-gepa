@@ -133,6 +133,13 @@ def run_one_task(
                 "score": score,
                 "feedback": feedback,
                 "actions": [(s.action or "")[:200] for s in traj.steps],
+                # Retain raw model text per step so the audit chain
+                # (Qwen-text → parse_action → env.step) is fully traceable
+                # post-hoc — per Codex audit of B1 baseline mini 2026-05-26.
+                # Each entry truncated to 2000 chars to bound JSON size.
+                "raw_model_texts": [
+                    (s.raw_model_text or "")[:2000] for s in traj.steps
+                ],
             }
         )
     else:
@@ -143,6 +150,7 @@ def run_one_task(
             "score": None,
             "feedback": "(crashed)",
             "actions": [],
+            "raw_model_texts": [],
         })
     return rec
 

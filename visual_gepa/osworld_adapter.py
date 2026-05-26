@@ -47,6 +47,11 @@ class MultimodalStep:
     accessibility_tree: str
     reward: float | None = None
     feedback: str = ""
+    # Raw model output BEFORE parse_action. Optional because synthetic /
+    # scripted env adapters (e.g. MockOSWorldAdapter) don't have a model
+    # call. Retained for the paper-grade audit chain: Qwen-text → parse →
+    # action → env.step (per Codex audit of B1 baseline mini 2026-05-26).
+    raw_model_text: str | None = None
 
 
 @dataclass
@@ -351,6 +356,7 @@ class OSWorldAdapter:
                             accessibility_tree=axtree,
                             reward=None,
                             feedback=feedback,
+                            raw_model_text=response_text,
                         )
                     )
                     break
@@ -363,6 +369,7 @@ class OSWorldAdapter:
                         accessibility_tree=axtree,
                         reward=reward,
                         feedback=str(feedback),
+                        raw_model_text=response_text,
                     )
                 )
 
