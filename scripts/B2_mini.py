@@ -495,6 +495,9 @@ def main() -> int:
                 "cluster_membership_by_app": fcvr_record.cluster_membership_by_app,
                 "centroid_pairwise_distances": fcvr_record.centroid_pairwise_distances,
                 "action_edit_distance_within_cluster": fcvr_record.action_edit_distance_within_cluster,
+                # Cluster narrative gate (codex v2 audit, 2026-05-27)
+                "cluster_interpretable": fcvr_record.cluster_interpretable,
+                "cluster_interpretable_reason": fcvr_record.cluster_interpretable_reason,
             } if fcvr_record else None),
         },
         "phaseC": ({
@@ -506,6 +509,73 @@ def main() -> int:
         "pair_audit": pair_audit,
         "reward_source_audit": reward_source_audit,
     }
+
+    # --- Paper-grade metrics (codex v2 audit, 2026-05-27) -------------------
+    # `distinct_actions` was demoted to diagnostic because A↔A2 noise floor
+    # (mean 1.4, max 3 on B2 mini v2 same prompt different seeds) dwarfed
+    # the FCVR effect (mean 0.2, max 1). These metrics are robust to that
+    # variance because they're either binary per-task (success / loop_escape)
+    # or expressed as a paired delta net of noise.
+    def _early_stop_rate(records: list) -> float:
+        if not records:
+            return 0.0
+        n = sum(
+            1 for r in records
+            if (r.get("early_stop_reason") or "").startswith("repeated_actions_")
+        )
+        return n / len(records)
+
+    paper_metrics = {
+        "phase_A_success_rate": A_summary["success_rate"],
+        "phase_A_mean_reward": A_summary["mean_reward"],
+        "phase_A_early_stop_rate": _early_stop_rate(A_records),
+        "phase_C_success_rate": (C_summary or {}).get("success_rate", 0.0) if C_summary else None,
+        "phase_C_mean_reward": (C_summary or {}).get("mean_reward", 0.0) if C_summary else None,
+        "phase_C_early_stop_rate": _early_stop_rate(C_records) if C_records else None,
+        # Loop-escape: tasks where vanilla A early-stopped AND FCVR C did NOT.
+        # The cleanest qualitative win for FCVR — even if reward stays 0, did
+        # FCVR push the agent past the click-loop death spiral?
+        "loop_escape_count": None,
+        "loop_escape_task_ids": [],
+        # Seed-normalized diversity delta = mean(C-A) - mean(|A-A2|).
+        # Positive => FCVR's diversity effect exceeds vanilla seed noise.
+        # Negative => FCVR effect is within or below the noise floor.
+        "seed_normalized_diversity_delta": None,
+    }
+    if C_records:
+        c_by_id = {r["task_id"]: r for r in C_records}
+        loop_escape = []
+        for ra in A_records:
+            rc = c_by_id.get(ra["task_id"])
+            if rc is None:
+                continue
+            a_loop = (ra.get("early_stop_reason") or "").startswith("repeated_actions_")
+            c_loop = (rc.get("early_stop_reason") or "").startswith("repeated_actions_")
+            if a_loop and not c_loop:
+                loop_escape.append(ra["task_id"])
+        paper_metrics["loop_escape_count"] = len(loop_escape)
+        paper_metrics["loop_escape_task_ids"] = loop_escape
+    if A2_records and C_records:
+        a2_by_id = {r["task_id"]: r for r in A2_records}
+        c_by_id = {r["task_id"]: r for r in C_records}
+        ac_deltas = []
+        aa2_drifts = []
+        for ra in A_records:
+            rc = c_by_id.get(ra["task_id"])
+            rb = a2_by_id.get(ra["task_id"])
+            if rc is not None:
+                ac_deltas.append(
+                    (rc.get("n_distinct_actions") or 0) - (ra.get("n_distinct_actions") or 0)
+                )
+            if rb is not None:
+                aa2_drifts.append(
+                    abs((ra.get("n_distinct_actions") or 0) - (rb.get("n_distinct_actions") or 0))
+                )
+        if ac_deltas and aa2_drifts:
+            paper_metrics["seed_normalized_diversity_delta"] = (
+                (sum(ac_deltas) / len(ac_deltas)) - (sum(aa2_drifts) / len(aa2_drifts))
+            )
+    overall["paper_metrics"] = paper_metrics
 
     # Cost approximation (Claude Opus 4.7 vision: $5 / Mtok input, $25 / Mtok output)
     if fcvr_record:

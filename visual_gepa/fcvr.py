@@ -67,6 +67,14 @@ class FCVRRunRecord:
     cluster_membership_by_app: list[dict[str, int]] = field(default_factory=list)
     centroid_pairwise_distances: list[list[float]] = field(default_factory=list)
     action_edit_distance_within_cluster: list[dict[str, float]] = field(default_factory=list)
+    # cluster_interpretable: only when clusters have substance worth reading.
+    # Rule (codex v2 audit, 2026-05-27): at least half the clusters must have
+    # ≥2 members AND silhouette_score ≥ 0.4. Otherwise narration must call
+    # phase B "per-example patching", not "failure mode discovery". This
+    # flag IS the gate — analysis scripts should check it before claiming
+    # cluster patterns.
+    cluster_interpretable: bool = False
+    cluster_interpretable_reason: str = ""
 
 
 def _app_of(task_id: str) -> str:
@@ -217,6 +225,28 @@ class FCVROperator:
             ]
             for i in range(k_eff)
         ]
+        # Cluster interpretability gate (≥half clusters have ≥2 members
+        # AND silhouette >= 0.4). Codex v2 audit, 2026-05-27.
+        n_multi = sum(1 for s in cluster_sizes if s >= 2)
+        sil_ok = (record.silhouette_score is not None) and (record.silhouette_score >= 0.4)
+        members_ok = (n_multi >= max(1, k_eff // 2))
+        if members_ok and sil_ok:
+            record.cluster_interpretable = True
+            record.cluster_interpretable_reason = (
+                f"OK: {n_multi}/{k_eff} clusters have >=2 members "
+                f"AND silhouette={record.silhouette_score:.2f}>=0.4"
+            )
+        else:
+            why = []
+            if not members_ok:
+                why.append(f"only {n_multi}/{k_eff} clusters have >=2 members (need >={max(1, k_eff // 2)})")
+            if not sil_ok:
+                sil_str = f"{record.silhouette_score:.2f}" if record.silhouette_score is not None else "None"
+                why.append(f"silhouette={sil_str}<0.4")
+            record.cluster_interpretable = False
+            record.cluster_interpretable_reason = "PER_EXAMPLE_PATCHING: " + "; ".join(why)
+        logger.info("cluster_interpretable=%s — %s", record.cluster_interpretable, record.cluster_interpretable_reason)
+
         # Action-trace edit distance within each cluster.
         # Tokenize action by `parse_action` output stripped of arg whitespace —
         # i.e. the same string the rollout's repeated-actions early-stop sees.

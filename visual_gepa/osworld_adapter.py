@@ -29,6 +29,8 @@ import io
 import json
 import logging
 import re
+import subprocess
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -37,6 +39,64 @@ from PIL import Image
 from .structured_prompt import StructuredPrompt
 
 logger = logging.getLogger(__name__)
+
+
+# --- OSWorld VM watchdog --------------------------------------------------
+# Kill the active OSWorld container if a single env operation hangs (B2 mini
+# v2 found OSWorld's at-spi axtree fetch can wedge indefinitely on gimp).
+# `docker kill` makes the in-flight HTTP call from the OSWorld client raise
+# ConnectionError, which our rollout's except handler catches as a clean
+# env_step_timeout, and the run terminates without losing the rest of the
+# batch.
+_OSWORLD_DOCKER_IMAGE = "happysixd/osworld-docker"
+
+
+def _docker_kill_osworld_containers(reason: str) -> int:
+    """Kill all running OSWorld containers. Returns count killed."""
+    killed = 0
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "-q", "--filter", f"ancestor={_OSWORLD_DOCKER_IMAGE}"],
+            capture_output=True, text=True, timeout=10,
+        )
+        for cid in result.stdout.strip().split("\n"):
+            cid = cid.strip()
+            if not cid:
+                continue
+            subprocess.run(["docker", "kill", cid], capture_output=True, timeout=10)
+            killed += 1
+        if killed:
+            logger.warning(
+                "watchdog: killed %d OSWorld container(s) — reason=%s",
+                killed, reason,
+            )
+    except Exception as e:  # noqa: BLE001
+        logger.error("watchdog kill failed: %s", e)
+    return killed
+
+
+def _with_watchdog(timeout_s: int, label: str, callable_, *args, **kwargs):
+    """Run callable_ under a wall-clock watchdog. On timeout, docker-kill
+    OSWorld containers so the in-flight HTTP call raises and the python
+    code can recover.
+
+    Returns the callable's result. If the watchdog fires, the callable
+    still runs to completion — it's just that the underlying HTTP/IPC
+    will have been forcibly broken, so it should fail fast after.
+    Caller handles the resulting exception.
+    """
+    if timeout_s <= 0:
+        return callable_(*args, **kwargs)
+    timer = threading.Timer(
+        timeout_s,
+        lambda: _docker_kill_osworld_containers(f"{label}_timeout_{timeout_s}s"),
+    )
+    timer.daemon = True
+    timer.start()
+    try:
+        return callable_(*args, **kwargs)
+    finally:
+        timer.cancel()
 
 
 # --- Trajectory data classes (shared with mock adapter) --------------------
@@ -254,6 +314,15 @@ class OSWorldAdapter:
         action across all 15 steps — 87% of vLLM cycles were waste on
         screenshot-identical click-loops. Symmetric application across
         vanilla & enhanced rollouts keeps A↔C comparisons unbiased.
+      step_watchdog_seconds: per-`env.step` wall-clock cap. If a single
+        step (incl. screenshot + axtree fetch + pyautogui execute) takes
+        longer than this, kill the active OSWorld docker container
+        (image `happysixd/osworld-docker`), which makes the in-flight HTTP
+        call raise ConnectionError, our except handler records the crash
+        as `env_step_timeout`, and the rollout terminates cleanly. Default
+        180s (3 min). Set to 0 to disable. Driven by 2026-05-27 gimp
+        Phase C hang: at-spi axtree fetch wedged for 10+ min until we
+        manually `docker kill`'d the container.
     """
 
     def __init__(
@@ -268,6 +337,9 @@ class OSWorldAdapter:
         headless: bool = True,
         cache_dir: str | Path | None = None,
         early_stop_on_repeated_actions: int = 3,
+        step_watchdog_seconds: int = 180,
+        reset_watchdog_seconds: int = 600,
+        evaluate_watchdog_seconds: int = 60,
     ) -> None:
         if task_config_path is None and task_dict is None:
             raise ValueError("provide either task_config_path or task_dict")
@@ -286,6 +358,16 @@ class OSWorldAdapter:
         if not isinstance(early_stop_on_repeated_actions, int) or early_stop_on_repeated_actions < 0:
             raise ValueError("early_stop_on_repeated_actions must be int >= 0")
         self.early_stop_on_repeated_actions = early_stop_on_repeated_actions
+        for name, v in (
+            ("step_watchdog_seconds", step_watchdog_seconds),
+            ("reset_watchdog_seconds", reset_watchdog_seconds),
+            ("evaluate_watchdog_seconds", evaluate_watchdog_seconds),
+        ):
+            if not isinstance(v, int) or v < 0:
+                raise ValueError(f"{name} must be int >= 0 (0 disables)")
+        self.step_watchdog_seconds = step_watchdog_seconds
+        self.reset_watchdog_seconds = reset_watchdog_seconds
+        self.evaluate_watchdog_seconds = evaluate_watchdog_seconds
         # OSWorld DesktopEnv defaults `cache_dir` to "cache" (relative to CWD)
         # and downloads Ubuntu.qcow2.zip to `./docker_vm_data` (also relative).
         # Pin both to an absolute path so re-runs from different working
@@ -357,7 +439,17 @@ class OSWorldAdapter:
             final_reward=0.0,
         )
         try:
-            obs = env.reset(task_config=self.task_config)
+            try:
+                obs = _with_watchdog(
+                    self.reset_watchdog_seconds, "env_reset",
+                    env.reset, task_config=self.task_config,
+                )
+            except Exception as e:  # noqa: BLE001
+                feedback = f"env.reset exception: {type(e).__name__}: {e}"
+                logger.warning("reset: %s", feedback)
+                traj.early_stop_reason = "env_reset_exception"
+                traj.reward_source = "no_steps"
+                return traj
             done = False
             for step_i in range(self.max_steps):
                 screenshot = obs.get("screenshot")
@@ -369,7 +461,10 @@ class OSWorldAdapter:
                 action = parse_action(response_text)
 
                 try:
-                    obs, reward, done, info = env.step(action)
+                    obs, reward, done, info = _with_watchdog(
+                        self.step_watchdog_seconds, "env_step",
+                        env.step, action,
+                    )
                 except Exception as e:  # noqa: BLE001
                     feedback = f"env.step exception: {type(e).__name__}: {e}"
                     logger.warning("step %d: %s", step_i, feedback)
@@ -426,7 +521,10 @@ class OSWorldAdapter:
             # Final reward via official OSWorld evaluator (always — even on
             # early-stop). Reward provenance recorded for the post-run audit.
             try:
-                final_reward = float(env.evaluate())
+                final_reward = float(_with_watchdog(
+                    self.evaluate_watchdog_seconds, "env_evaluate",
+                    env.evaluate,
+                ))
                 traj.reward_source = "env_evaluate"
             except Exception as e:  # noqa: BLE001
                 logger.warning("env.evaluate failed: %s", e)
