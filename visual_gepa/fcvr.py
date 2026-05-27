@@ -75,6 +75,13 @@ class FCVRRunRecord:
     # cluster patterns.
     cluster_interpretable: bool = False
     cluster_interpretable_reason: str = ""
+    # Per-cluster member task_ids — needed by GEPA-loop orchestrators to
+    # build rejected-cluster memory. Codex dry-smoke audit (2026-05-27) Q2:
+    # iter k+1 sees same failures as iter k if parent unchanged → KMeans
+    # picks same clusters → reflection produces near-same patches → same
+    # reject. Solution: track which cluster member-sets have already been
+    # tried and skip them next iter.
+    cluster_member_task_ids: list[list[str]] = field(default_factory=list)
 
 
 def _app_of(task_id: str) -> str:
@@ -209,14 +216,21 @@ class FCVROperator:
                 logger.warning("silhouette_score failed: %s", e)
                 record.silhouette_score = None
         # Per-cluster app membership (parses task_id → "<app>/<uuid>").
+        # Also record per-cluster member task_ids for orchestrator-side
+        # rejected-cluster memory (codex Q2).
         record.cluster_membership_by_app = []
+        record.cluster_member_task_ids = []
         for c in range(k_eff):
             member_idx = np.where(labels == c)[0]
             app_counts: dict[str, int] = {}
+            tids: list[str] = []
             for i in member_idx:
-                app = _app_of(getattr(failed_trajectories[int(i)], "task_id", ""))
+                tid = getattr(failed_trajectories[int(i)], "task_id", "")
+                tids.append(tid)
+                app = _app_of(tid)
                 app_counts[app] = app_counts.get(app, 0) + 1
             record.cluster_membership_by_app.append(app_counts)
+            record.cluster_member_task_ids.append(tids)
         # Pairwise centroid distances (K×K, symmetric, zero diagonal).
         record.centroid_pairwise_distances = [
             [

@@ -250,31 +250,45 @@ def should_promote(
     parent_records: list[dict],
     child_records: list[dict],
 ) -> tuple[bool, str]:
-    """Promotion guard (codex action item, 2026-05-27).
+    """Promotion guard.
 
     Accept the child IF any of:
       1. Strict mean reward improvement
       2. Strict success-count improvement
-      3. Early-stop reduction by >=2 tasks on minibatch AND no reward regression
+      3. Early-stop reduction by >= max(2, ceil(0.15 * n)) tasks on minibatch
+         AND no reward/success regression
+
+    The ES threshold scales with minibatch size (codex dry-smoke audit
+    2026-05-27 Q1): "≥2 fewer ES" was right at n=5 (40pp threshold) but at
+    n=25 that's only 8pp and would promote noise.
 
     Returns (accept_bool, reason_string).
     """
+    import math
     p_sum = summarize(parent_records)
     c_sum = summarize(child_records)
+    n = max(len(parent_records), len(child_records))
+    es_threshold = max(2, math.ceil(0.15 * n))
     if c_sum["mean_reward"] > p_sum["mean_reward"]:
         return True, f"reward_better ({p_sum['mean_reward']:.3f} → {c_sum['mean_reward']:.3f})"
     if c_sum["n_succeeded"] > p_sum["n_succeeded"]:
         return True, f"success_better ({p_sum['n_succeeded']} → {c_sum['n_succeeded']})"
-    # Early-stop reduction = fewer click-loop deaths. Require ≥2-task drop
-    # AND no reward regression. Codex flagged the original tuple-cmp as too
-    # lax (would promote on 1-task ES drop, which is within noise at n=5).
     p_es = int(round(p_sum["early_stop_rate"] * len(parent_records)))
     c_es = int(round(c_sum["early_stop_rate"] * len(child_records)))
-    if (p_es - c_es) >= 2 and c_sum["mean_reward"] >= p_sum["mean_reward"]:
-        return True, f"early_stop_better_no_reward_regression (ES {p_es} → {c_es}, reward {p_sum['mean_reward']:.3f} ≥ {c_sum['mean_reward']:.3f})"
+    if (
+        (p_es - c_es) >= es_threshold
+        and c_sum["mean_reward"] >= p_sum["mean_reward"]
+        and c_sum["n_succeeded"] >= p_sum["n_succeeded"]
+    ):
+        return True, (
+            f"early_stop_better (ΔES {p_es}→{c_es}={p_es - c_es}≥{es_threshold}, "
+            f"reward {p_sum['mean_reward']:.3f}≥{c_sum['mean_reward']:.3f}, "
+            f"succ {p_sum['n_succeeded']}≥{c_sum['n_succeeded']})"
+        )
     return False, (
-        f"reject (parent: r={p_sum['mean_reward']:.3f}, succ={p_sum['n_succeeded']}, ES={p_es}; "
-        f"child: r={c_sum['mean_reward']:.3f}, succ={c_sum['n_succeeded']}, ES={c_es})"
+        f"reject (n={n}, ES_threshold={es_threshold}; parent: r={p_sum['mean_reward']:.3f}, "
+        f"succ={p_sum['n_succeeded']}, ES={p_es}; child: r={c_sum['mean_reward']:.3f}, "
+        f"succ={c_sum['n_succeeded']}, ES={c_es})"
     )
 
 
@@ -338,6 +352,7 @@ def main() -> int:
     clip = CLIPImageEmbedder(model_name=args.clip_model, device=args.clip_device)
     reflection = ClaudeReflectionClient(model=args.reflection_model, max_output_tokens=args.T_patch)
     budget = FCVRBudget(K=args.K, J=args.J, M=args.M, T_patch=args.T_patch)
+    # FCVR rng_seed is reset per-iter inside the loop (codex Q3 hygiene fix).
     fcvr = FCVROperator(budget=budget, clip_embedder=clip, reflection_client=reflection, rng_seed=args.rng_seed)
 
     started = datetime.datetime.utcnow().isoformat() + "Z"
@@ -362,6 +377,22 @@ def main() -> int:
     total_fcvr_input_tokens = 0
     total_fcvr_output_tokens = 0
     iter_total_cost = 0.0
+    # Codex Q2 fix (dry-smoke 2026-05-27): rejected-cluster memory. When
+    # parent doesn't change after a reject, iter k+1 sees the same failures
+    # → KMeans picks the same clusters → reflection makes the same patches
+    # → same reject. Track which cluster member-sets have been tried and
+    # skip subsequent iters' patches whose cluster member-set is contained
+    # in any previously-rejected member-set.
+    rejected_member_sets: list[frozenset[str]] = []
+    # Codex Q4 fix: best_child_loop_escape — track the union across iters
+    # of (task_id where vanilla A early-stopped) AND (any child this iter
+    # did NOT early-stop). This captures FCVR's reachability even when no
+    # iter promotes the child to parent.
+    a_loop_task_ids = {
+        r["task_id"] for r in A_records
+        if (r.get("early_stop_reason") or "").startswith("repeated_actions_")
+    }
+    best_child_loop_escape_set: set[str] = set()
 
     for iter_k in range(1, args.max_iters + 1):
         logger.info("=== PHASE G iter %d/%d ===", iter_k, args.max_iters)
@@ -376,24 +407,54 @@ def main() -> int:
             iter_history.append(iter_rec)
             logger.info("  iter %d: too few failures (%d) — skip", iter_k, len(failed_trajs))
             continue
-        # FCVR reflection on failures
+        # Codex Q3 hygiene fix: per-iter FCVR rng so KMeans differs across iters
+        # even when the failure set is unchanged. Without this, iter k+1 with
+        # same failures + same seed produces identical clusters.
+        fcvr.rng_seed = args.rng_seed + iter_k
         patches, fcvr_record = fcvr.run(failed_trajs, parent_prompt=parent_prompt)
+        # Codex Q2 fix: filter out patches whose cluster member-set is contained
+        # in any previously-rejected cluster (these would just retry a failed
+        # mutation). Keep patches whose cluster has at least one NEW member.
+        filtered_patches: list = []
+        filtered_member_sets: list[frozenset[str]] = []
+        cluster_member_sets = [frozenset(s) for s in (fcvr_record.cluster_member_task_ids or [])]
+        skipped_count = 0
+        for i, p in enumerate(patches):
+            mset = cluster_member_sets[i] if i < len(cluster_member_sets) else frozenset()
+            if any(mset and mset <= rej for rej in rejected_member_sets):
+                skipped_count += 1
+                continue
+            filtered_patches.append(p)
+            filtered_member_sets.append(mset)
         iter_rec.update({
-            "n_patches": len(patches),
+            "n_patches_proposed": len(patches),
+            "n_patches_after_dedup": len(filtered_patches),
+            "n_patches_skipped_as_rejected_dup": skipped_count,
             "fcvr_silhouette": fcvr_record.silhouette_score if fcvr_record else None,
             "cluster_sizes": fcvr_record.cluster_sizes if fcvr_record else [],
             "cluster_interpretable": fcvr_record.cluster_interpretable if fcvr_record else False,
             "fcvr_input_tokens": fcvr_record.total_input_tokens if fcvr_record else 0,
             "fcvr_output_tokens": fcvr_record.total_output_tokens if fcvr_record else 0,
+            "fcvr_rng_seed_used": fcvr.rng_seed,
         })
+        # Backward-compat key (older analyzers read "n_patches"):
+        iter_rec["n_patches"] = len(filtered_patches)
         if fcvr_record:
             total_fcvr_input_tokens += fcvr_record.total_input_tokens
             total_fcvr_output_tokens += fcvr_record.total_output_tokens
-        if not patches:
-            iter_rec["decision"] = "skip_no_patches"
+        if not filtered_patches:
+            iter_rec["decision"] = (
+                "skip_no_new_patches"
+                if skipped_count > 0 else "skip_no_patches"
+            )
             iter_history.append(iter_rec)
-            logger.info("  iter %d: FCVR returned 0 patches — skip", iter_k)
+            logger.info(
+                "  iter %d: no usable patches (proposed=%d, dedup-skipped=%d) — skip",
+                iter_k, len(patches), skipped_count,
+            )
             continue
+        # Reassign for the rest of the loop
+        patches = filtered_patches
         # Spawn K children = parent + each patch, eval on a random minibatch
         minibatch_idx = sorted(rng.sample(range(len(tasks)), min(args.minibatch_size, len(tasks))))
         minibatch_tasks = [tasks[i] for i in minibatch_idx]
@@ -425,6 +486,12 @@ def main() -> int:
             child_recs = evaluate_candidate(child_label, child_prompt, minibatch_tasks, args, child_stream)
             children_full_records.append(child_recs)
             child_score = score_candidate(child_recs)
+            # Codex Q4: best_child_loop_escape — for each minibatch task where
+            # vanilla A early-stopped, did THIS child fail to early-stop?
+            for cr in child_recs:
+                tid = cr["task_id"]
+                if tid in a_loop_task_ids and not (cr.get("early_stop_reason") or "").startswith("repeated_actions_"):
+                    best_child_loop_escape_set.add(tid)
             children_records.append({
                 "i": i, "patch_failure_pattern": p.failure_pattern[:200],
                 "score": list(child_score),
@@ -463,6 +530,11 @@ def main() -> int:
         else:
             iter_rec["decision"] = "reject_no_child_better"
             logger.info("  iter %d: REJECT — %s", iter_k, reason)
+            # Codex Q2: remember which cluster member-sets we just rejected,
+            # so iter k+1 doesn't propose patches over the same members again.
+            for mset in filtered_member_sets:
+                if mset:
+                    rejected_member_sets.append(mset)
         iter_history.append(iter_rec)
 
     # --- PHASE F (final eval) ----------------------------------------------
@@ -527,10 +599,23 @@ def main() -> int:
             "phase_F_success_rate": F_summary["success_rate"],
             "phase_F_mean_reward": F_summary["mean_reward"],
             "phase_F_early_stop_rate": F_summary["early_stop_rate"],
+            # promoted_loop_escape = tasks where Phase A early-stopped AND
+            # Phase F (post-GEPA, accepted-only) did not. Final-policy effect.
+            "promoted_loop_escape_count": len(loop_escape),
+            "promoted_loop_escape_task_ids": loop_escape,
+            # best_child_loop_escape = tasks where Phase A early-stopped AND
+            # at least one child (ANY iter, accepted or rejected) did not
+            # early-stop on that task. Codex Q4 (2026-05-27): captures FCVR's
+            # reachability even when no child was promoted. Lossy: ignores
+            # reward / partial credit; use alongside reward & success_rate.
+            "best_child_loop_escape_count": len(best_child_loop_escape_set),
+            "best_child_loop_escape_task_ids": sorted(best_child_loop_escape_set),
+            # Backward-compat alias (older analyzers read "loop_escape_count"):
             "loop_escape_count": len(loop_escape),
             "loop_escape_task_ids": loop_escape,
             "gepa_iters_accepted": accepted_children,
             "gepa_iters_attempted": args.max_iters,
+            "rejected_cluster_member_sets": [sorted(s) for s in rejected_member_sets],
         },
         "approx_claude_cost_usd": round(cost_usd, 4),
         "pass_criteria_met": {
