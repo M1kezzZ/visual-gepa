@@ -1,0 +1,147 @@
+{
+  "phase": "G1.C0",
+  "tasks": [
+    {
+      "task_id": "chrome/12086550-11c0-466b-b367-1d9e75b3910e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/12086550-11c0-466b-b367-1d9e75b3910e.json",
+      "instruction": "Computer, please navigate to the area in my browser settings where my passwords are stored. I want to check my login information for Etsy without revealing it just yet.",
+      "phase": "G1.C0",
+      "elapsed_s": 65.1,
+      "crashed_with": null,
+      "n_steps": 5,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=12086550-11c0-466b-b367-1d9e75b3910e succeeded=False n_steps=5\naction_trace_summary: 1.pyautogui.click(x=17, y=59) | 2.pyautogui.click(x=17, y=59) | 3.pyautogui.click(x=984, y=42) | 4.pyautogui.click(x=984, y=42) | 5.pyautogui.click(x=984, y=42)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=984, y=42)",
+        "pyautogui.click(x=984, y=42)",
+        "pyautogui.click(x=984, y=42)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=984, y=42)\n```",
+        "```python\npyautogui.click(x=984, y=42)\n```",
+        "```python\npyautogui.click(x=984, y=42)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_calc/04d9aeaf-7bed-4024-bedb-e10e6f00eb7f",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/04d9aeaf-7bed-4024-bedb-e10e6f00eb7f.json",
+      "instruction": "In a new sheet (\"Sheet2\") with 4 headers \"Year\", \"CA changes\", \"FA changes\", and \"OA changes\", calculate the percentage annual changes compared to last year in 2015 to 2019 for the Current Assets, Fixed Assets, and Other Assets columns. ",
+      "phase": "G1.C0",
+      "elapsed_s": 72.44,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=04d9aeaf-7bed-4024-bedb-e10e6f00eb7f succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=500, y=250) | 2.pyautogui.click(x=100, y=950) | 3.pyautogui.click(x=100, y=950) | 4.pyautogui.click(x=100, y=950)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=500, y=250)",
+        "pyautogui.click(x=100, y=950)",
+        "pyautogui.click(x=100, y=950)",
+        "pyautogui.click(x=100, y=950)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=500, y=250)\n```",
+        "```python\npyautogui.click(x=100, y=950)\n```",
+        "```python\npyautogui.click(x=100, y=950)\n```",
+        "```python\npyautogui.click(x=100, y=950)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0a0faba3-5580-44df-965d-f562a99b291c",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0a0faba3-5580-44df-965d-f562a99b291c.json",
+      "instruction": "I would like to make the first three words of the sentence left-aligned and the rest right-aligned. I basically want to have some empty space in the middle to add some photos. Assume that every sentence will have at least three words. Could you help me on alignment for me using tabstops?",
+      "phase": "G1.C0",
+      "elapsed_s": 63.497,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0a0faba3-5580-44df-965d-f562a99b291c succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=960, y=27) | 2.pyautogui.click(x=217, y=442) | 3.pyautogui.click(x=217, y=442) | 4.pyautogui.click(x=217, y=442)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=960, y=27)",
+        "pyautogui.click(x=217, y=442)",
+        "pyautogui.click(x=217, y=442)",
+        "pyautogui.click(x=217, y=442)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=960, y=27)\n```",
+        "```python\npyautogui.click(x=217, y=442)\n```",
+        "```python\npyautogui.click(x=217, y=442)\n```",
+        "```python\npyautogui.click(x=217, y=442)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0b17a146-2934-46c7-8727-73ff6b6483e8",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0b17a146-2934-46c7-8727-73ff6b6483e8.json",
+      "instruction": "Help me change the 2 in \"H2O\" to a subscript.",
+      "phase": "G1.C0",
+      "elapsed_s": 64.481,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0b17a146-2934-46c7-8727-73ff6b6483e8 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=960, y=850) | 2.pyautogui.click(x=460, y=455) | 3.pyautogui.click(x=460, y=455) | 4.pyautogui.click(x=460, y=455)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=960, y=850)",
+        "pyautogui.click(x=460, y=455)",
+        "pyautogui.click(x=460, y=455)",
+        "pyautogui.click(x=460, y=455)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=960, y=850)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/276cc624-87ea-4f08-ab93-f770e3790175",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/276cc624-87ea-4f08-ab93-f770e3790175.json",
+      "instruction": "Please help me set the current user's line length for code wrapping to 50 characters in VS Code.",
+      "phase": "G1.C0",
+      "elapsed_s": 54.865,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=276cc624-87ea-4f08-ab93-f770e3790175 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=182) | 2.pyautogui.click(x=330, y=137) | 3.pyautogui.click(x=330, y=137) | 4.pyautogui.click(x=330, y=137)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=182)",
+        "pyautogui.click(x=330, y=137)",
+        "pyautogui.click(x=330, y=137)",
+        "pyautogui.click(x=330, y=137)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=182)\n```",
+        "```python\npyautogui.click(x=330, y=137)\n```",
+        "```python\npyautogui.click(x=330, y=137)\n```",
+        "```python\npyautogui.click(x=330, y=137)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

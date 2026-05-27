@@ -1,0 +1,159 @@
+{
+  "phase": "G1.C2",
+  "tasks": [
+    {
+      "task_id": "chrome/12086550-11c0-466b-b367-1d9e75b3910e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/12086550-11c0-466b-b367-1d9e75b3910e.json",
+      "instruction": "Computer, please navigate to the area in my browser settings where my passwords are stored. I want to check my login information for Etsy without revealing it just yet.",
+      "phase": "G1.C2",
+      "elapsed_s": 58.409,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=12086550-11c0-466b-b367-1d9e75b3910e succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=56) | 2.pyautogui.click(x=985, y=71) | 3.pyautogui.click(x=985, y=71) | 4.pyautogui.click(x=985, y=71)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=56)",
+        "pyautogui.click(x=985, y=71)",
+        "pyautogui.click(x=985, y=71)",
+        "pyautogui.click(x=985, y=71)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=56)\n```",
+        "```python\npyautogui.click(x=985, y=71)\n```",
+        "```python\npyautogui.click(x=985, y=71)\n```",
+        "```python\npyautogui.click(x=985, y=71)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_calc/04d9aeaf-7bed-4024-bedb-e10e6f00eb7f",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/04d9aeaf-7bed-4024-bedb-e10e6f00eb7f.json",
+      "instruction": "In a new sheet (\"Sheet2\") with 4 headers \"Year\", \"CA changes\", \"FA changes\", and \"OA changes\", calculate the percentage annual changes compared to last year in 2015 to 2019 for the Current Assets, Fixed Assets, and Other Assets columns. ",
+      "phase": "G1.C2",
+      "elapsed_s": 119.257,
+      "crashed_with": null,
+      "n_steps": 7,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=04d9aeaf-7bed-4024-bedb-e10e6f00eb7f succeeded=False n_steps=7\naction_trace_summary: 1.WAIT | 2.pyautogui.rightClick(x=120, y=980) | 3.pyautogui.click(x=105, y=725) | 4.pyautogui.hotkey('ctrl', 'shift', 'n') | 5.pyautogui.click(x=663, y=765) | 6.pyautogui.click(x=663, y=765) | 7.pyautogui.click(x=663, y=765)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "WAIT",
+        "pyautogui.rightClick(x=120, y=980)",
+        "pyautogui.click(x=105, y=725)",
+        "pyautogui.hotkey('ctrl', 'shift', 'n')",
+        "pyautogui.click(x=663, y=765)",
+        "pyautogui.click(x=663, y=765)",
+        "pyautogui.click(x=663, y=765)"
+      ],
+      "raw_model_texts": [
+        "The LibreOffice Calc window is currently loading the document \"SmallBalanceSheet.xlsx\". The main spreadsheet area is blank, and a \"Load document\" progress bar is visible at the bottom. I need to wait for the document to fully load before I can proceed with creating a new sheet and entering data.\n\n```python\nWAIT\n```",
+        "The document is now fully loaded. I can see the data in \"Sheet1\". The next step is to create a new sheet named \"Sheet2\". I will do this by right-clicking on the sheet tab at the bottom of the window and selecting \"Insert Sheet...\".\n\n```python\npyautogui.rightClick(x=120, y=980)\n```",
+        "The right-click context menu is open over the sheet tab area. I need to select \"Insert Sheet...\" from this menu to create the new sheet.\n\n```python\npyautogui.click(x=105, y=725)\n```",
+        "The previous action to insert a sheet did not result in the \"Insert Sheet\" dialog appearing; instead, the view returned to the main spreadsheet. This suggests the right-click context menu may have closed or the click missed the menu item. Since the \"Insert Sheet\" dialog is not visible, I will use the keyboard shortcut to open the \"Insert Sheet\" dialog directly. In LibreOffice Calc, the shortcut to insert a sheet is typically `Ctrl + Shift + N`.\n\n```python\npyautogui.hotkey('ctrl', 'shift', 'n')\n```",
+        "The \"Templates\" dialog is open and blocking the spreadsheet. I need to close this dialog first to access the spreadsheet and then proceed with creating the new sheet. I will click the \"Close\" button on the \"Templates\" dialog.\n\n```python\npyautogui.click(x=663, y=765)\n```",
+        "The \"Templates\" dialog is still open and blocking the spreadsheet. I need to close this dialog to proceed with creating the new sheet. I will click the \"Close\" button on the \"Templates\" dialog.\n\n```python\npyautogui.click(x=663, y=765)\n```",
+        "The \"Templates\" dialog is still open and blocking the spreadsheet. I need to close this dialog to proceed with creating the new sheet. I will click the \"Close\" button on the \"Templates\" dialog.\n\n```python\npyautogui.click(x=663, y=765)\n```"
+      ],
+      "n_distinct_actions": 5,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0a0faba3-5580-44df-965d-f562a99b291c",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0a0faba3-5580-44df-965d-f562a99b291c.json",
+      "instruction": "I would like to make the first three words of the sentence left-aligned and the rest right-aligned. I basically want to have some empty space in the middle to add some photos. Assume that every sentence will have at least three words. Could you help me on alignment for me using tabstops?",
+      "phase": "G1.C2",
+      "elapsed_s": 63.352,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0a0faba3-5580-44df-965d-f562a99b291c succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=960, y=300) | 2.pyautogui.click(x=450, y=500) | 3.pyautogui.click(x=450, y=500) | 4.pyautogui.click(x=450, y=500)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=960, y=300)",
+        "pyautogui.click(x=450, y=500)",
+        "pyautogui.click(x=450, y=500)",
+        "pyautogui.click(x=450, y=500)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=960, y=300)\n```",
+        "```python\npyautogui.click(x=450, y=500)\n```",
+        "```python\npyautogui.click(x=450, y=500)\n```",
+        "```python\npyautogui.click(x=450, y=500)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0b17a146-2934-46c7-8727-73ff6b6483e8",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0b17a146-2934-46c7-8727-73ff6b6483e8.json",
+      "instruction": "Help me change the 2 in \"H2O\" to a subscript.",
+      "phase": "G1.C2",
+      "elapsed_s": 63.875,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0b17a146-2934-46c7-8727-73ff6b6483e8 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=960, y=850) | 2.pyautogui.click(x=460, y=455) | 3.pyautogui.click(x=460, y=455) | 4.pyautogui.click(x=460, y=455)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=960, y=850)",
+        "pyautogui.click(x=460, y=455)",
+        "pyautogui.click(x=460, y=455)",
+        "pyautogui.click(x=460, y=455)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=960, y=850)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/276cc624-87ea-4f08-ab93-f770e3790175",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/276cc624-87ea-4f08-ab93-f770e3790175.json",
+      "instruction": "Please help me set the current user's line length for code wrapping to 50 characters in VS Code.",
+      "phase": "G1.C2",
+      "elapsed_s": 78.491,
+      "crashed_with": null,
+      "n_steps": 8,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=276cc624-87ea-4f08-ab93-f770e3790175 succeeded=False n_steps=8\naction_trace_summary: 1.clickOn(100, 184) | 2.type(\"editor.wordWrapColumn\", clear=True) | 3.type(\"editor.wordWrapColumn\", clear=True) | 4.type(\"50\", clear=True) | 5.type(\"50\", clear=True) | 6.type(\"editor.wordWrapColumn\", clear=True) | 7.type(\"editor.wordWrapColumn\", clear=True) | 8.type(\"editor.wordWrapColumn\", clear=True)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "clickOn(100, 184)",
+        "type(\"editor.wordWrapColumn\", clear=True)",
+        "type(\"editor.wordWrapColumn\", clear=True)",
+        "type(\"50\", clear=True)",
+        "type(\"50\", clear=True)",
+        "type(\"editor.wordWrapColumn\", clear=True)",
+        "type(\"editor.wordWrapColumn\", clear=True)",
+        "type(\"editor.wordWrapColumn\", clear=True)"
+      ],
+      "raw_model_texts": [
+        "```python\nclickOn(100, 184)\n```",
+        "```python\ntype(\"editor.wordWrapColumn\", clear=True)\n```",
+        "```python\ntype(\"editor.wordWrapColumn\", clear=True)\n```",
+        "```python\ntype(\"50\", clear=True)\n```",
+        "```python\ntype(\"50\", clear=True)\n```",
+        "```python\ntype(\"editor.wordWrapColumn\", clear=True)\n```",
+        "```python\ntype(\"editor.wordWrapColumn\", clear=True)\n```",
+        "```python\ntype(\"editor.wordWrapColumn\", clear=True)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

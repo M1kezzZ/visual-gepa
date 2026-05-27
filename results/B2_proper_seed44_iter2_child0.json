@@ -1,0 +1,149 @@
+{
+  "phase": "G2.C0",
+  "tasks": [
+    {
+      "task_id": "chrome/030eeff7-b492-4218-b312-701ec99ee0cc",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/030eeff7-b492-4218-b312-701ec99ee0cc.json",
+      "instruction": "Can you enable the 'Do Not Track' feature in Chrome to enhance my online privacy?",
+      "phase": "G2.C0",
+      "elapsed_s": 58.549,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=030eeff7-b492-4218-b312-701ec99ee0cc succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=56) | 2.pyautogui.click(x=985, y=79) | 3.pyautogui.click(x=985, y=79) | 4.pyautogui.click(x=985, y=79)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=56)",
+        "pyautogui.click(x=985, y=79)",
+        "pyautogui.click(x=985, y=79)",
+        "pyautogui.click(x=985, y=79)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=56)\n```",
+        "```python\npyautogui.click(x=985, y=79)\n```",
+        "```python\npyautogui.click(x=985, y=79)\n```",
+        "```python\npyautogui.click(x=985, y=79)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/045bf3ff-9077-4b86-b483-a1040a949cff",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/045bf3ff-9077-4b86-b483-a1040a949cff.json",
+      "instruction": "Could you turn my image into CYMK mode within GIMP ?",
+      "phase": "G2.C0",
+      "elapsed_s": 63.945,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=045bf3ff-9077-4b86-b483-a1040a949cff succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=493) | 2.pyautogui.click(x=17, y=493) | 3.pyautogui.click(x=17, y=493)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=493)",
+        "pyautogui.click(x=17, y=493)",
+        "pyautogui.click(x=17, y=493)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=493)\n```",
+        "```python\npyautogui.click(x=17, y=493)\n```",
+        "```python\npyautogui.click(x=17, y=493)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/2a729ded-3296-423d-aec4-7dd55ed5fbb3",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/2a729ded-3296-423d-aec4-7dd55ed5fbb3.json",
+      "instruction": "Could you make the background of this image transparent for me?",
+      "phase": "G2.C0",
+      "elapsed_s": 92.082,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=2a729ded-3296-423d-aec4-7dd55ed5fbb3 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=484) | 2.pyautogui.click(x=17, y=484) | 3.pyautogui.click(x=17, y=484)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=484)",
+        "pyautogui.click(x=17, y=484)",
+        "pyautogui.click(x=17, y=484)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=484)\n```",
+        "```python\npyautogui.click(x=17, y=484)\n```",
+        "```python\npyautogui.click(x=17, y=484)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d.json",
+      "instruction": "Set the minimum number of undo steps to 100.",
+      "phase": "G2.C0",
+      "elapsed_s": 112.163,
+      "crashed_with": null,
+      "n_steps": 8,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=7b7617bd-57cc-468e-9c91-40c4ec2bcb3d succeeded=False n_steps=8\naction_trace_summary: 1.pyautogui.click(x=1789, y=965) | 2.pyautogui.click(x=1789, y=965) | 3.pyautogui.click(x=17, y=56) | 4.pyautogui.click(x=985, y=41) | 5.pyautogui.click(x=1789, y=965) | 6.pyautogui.click(x=985, y=41) | 7.pyautogui.click(x=985, y=41) | 8.pyautogui.click(x=985, y=41)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=1789, y=965)",
+        "pyautogui.click(x=1789, y=965)",
+        "pyautogui.click(x=17, y=56)",
+        "pyautogui.click(x=985, y=41)",
+        "pyautogui.click(x=1789, y=965)",
+        "pyautogui.click(x=985, y=41)",
+        "pyautogui.click(x=985, y=41)",
+        "pyautogui.click(x=985, y=41)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=1789, y=965)\n```",
+        "```python\npyautogui.click(x=1789, y=965)\n```",
+        "```python\npyautogui.click(x=17, y=56)\n```",
+        "```python\npyautogui.click(x=985, y=41)\n```",
+        "```python\npyautogui.click(x=1789, y=965)\n```",
+        "```python\npyautogui.click(x=985, y=41)\n```",
+        "```python\npyautogui.click(x=985, y=41)\n```",
+        "```python\npyautogui.click(x=985, y=41)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_calc/035f41ba-6653-43ab-aa63-c86d449d62e5",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/035f41ba-6653-43ab-aa63-c86d449d62e5.json",
+      "instruction": "Help me fill in the Gross profit column by subtracting all the available expenses including discounts, allowances, material and labor charges, and overhead from the actual sale, i.e., the sales after deducting the returns. Then under column A named \"Year_Profit\" in a new sheet \"Sheet2\", display the Year Column in Sheet 1 as text appended by a \"_\" with the corresponding integer digits of Gross Profit value.",
+      "phase": "G2.C0",
+      "elapsed_s": 107.502,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=035f41ba-6653-43ab-aa63-c86d449d62e5 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.scroll(-10) | 2.pyautogui.hotkey('home') | 3.pyautogui.hotkey('home') | 4.pyautogui.hotkey('home')\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.scroll(-10)",
+        "pyautogui.hotkey('home')",
+        "pyautogui.hotkey('home')",
+        "pyautogui.hotkey('home')"
+      ],
+      "raw_model_texts": [
+        "The LibreOffice Calc window is open but the spreadsheet content is not visible. I need to scroll down or navigate to see the data to understand the structure of the \"Year_Profit\" column and the \"Gross Profit\" values.\n\n```python\npyautogui.scroll(-10)\n```",
+        "The spreadsheet is currently empty or scrolled to a position where no data is visible. I need to navigate to the top-left of the sheet to see the headers and data structure.\n\n```python\npyautogui.hotkey('home')\n```",
+        "The spreadsheet is currently empty or scrolled to a position where no data is visible. I need to navigate to the top-left of the sheet to see the headers and data structure.\n\n```python\npyautogui.hotkey('home')\n```",
+        "The spreadsheet is currently empty. I need to check if there is data in the file or if I need to create it. Since the task mentions \"Sheet1\" and \"Sheet2\", and the current view shows \"Sheet1\" is active but empty, I should first check if there's any data in the file by scrolling or checking other sheets. However, since the file is named \"IncomeStatement2.xlsx\", it's likely that the data should be there. Let me try to go to the beginning of the sheet to see if there's any data above the current view.\n\n```python\npyautogui.hotkey('home')\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

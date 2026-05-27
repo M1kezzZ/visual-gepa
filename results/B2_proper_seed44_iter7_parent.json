@@ -1,0 +1,145 @@
+{
+  "phase": "G7.P",
+  "tasks": [
+    {
+      "task_id": "chrome/0d8b7de3-e8de-4d86-b9fd-dd2dce58a217",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/0d8b7de3-e8de-4d86-b9fd-dd2dce58a217.json",
+      "instruction": "Browse the natural products database.",
+      "phase": "G7.P",
+      "elapsed_s": 74.115,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0d8b7de3-e8de-4d86-b9fd-dd2dce58a217 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=550, y=331) | 2.pyautogui.click(x=390, y=664) | 3.pyautogui.click(x=390, y=664) | 4.pyautogui.click(x=390, y=664)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=550, y=331)",
+        "pyautogui.click(x=390, y=664)",
+        "pyautogui.click(x=390, y=664)",
+        "pyautogui.click(x=390, y=664)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=550, y=331)\n```",
+        "```python\npyautogui.click(x=390, y=664)\n```",
+        "```python\npyautogui.click(x=390, y=664)\n```",
+        "```python\npyautogui.click(x=390, y=664)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "chrome/12086550-11c0-466b-b367-1d9e75b3910e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/12086550-11c0-466b-b367-1d9e75b3910e.json",
+      "instruction": "Computer, please navigate to the area in my browser settings where my passwords are stored. I want to check my login information for Etsy without revealing it just yet.",
+      "phase": "G7.P",
+      "elapsed_s": 58.391,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=12086550-11c0-466b-b367-1d9e75b3910e succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=59) | 2.pyautogui.click(x=985, y=42) | 3.pyautogui.click(x=985, y=42) | 4.pyautogui.click(x=985, y=42)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=985, y=42)",
+        "pyautogui.click(x=985, y=42)",
+        "pyautogui.click(x=985, y=42)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=985, y=42)\n```",
+        "```python\npyautogui.click(x=985, y=42)\n```",
+        "```python\npyautogui.click(x=985, y=42)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/045bf3ff-9077-4b86-b483-a1040a949cff",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/045bf3ff-9077-4b86-b483-a1040a949cff.json",
+      "instruction": "Could you turn my image into CYMK mode within GIMP ?",
+      "phase": "G7.P",
+      "elapsed_s": 64.345,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=045bf3ff-9077-4b86-b483-a1040a949cff succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=483) | 2.pyautogui.click(x=17, y=483) | 3.pyautogui.click(x=17, y=483)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=483)",
+        "pyautogui.click(x=17, y=483)",
+        "pyautogui.click(x=17, y=483)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=483)\n```",
+        "```python\npyautogui.click(x=17, y=483)\n```",
+        "```python\npyautogui.click(x=17, y=483)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0a0faba3-5580-44df-965d-f562a99b291c",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0a0faba3-5580-44df-965d-f562a99b291c.json",
+      "instruction": "I would like to make the first three words of the sentence left-aligned and the rest right-aligned. I basically want to have some empty space in the middle to add some photos. Assume that every sentence will have at least three words. Could you help me on alignment for me using tabstops?",
+      "phase": "G7.P",
+      "elapsed_s": 77.537,
+      "crashed_with": null,
+      "n_steps": 5,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0a0faba3-5580-44df-965d-f562a99b291c succeeded=False n_steps=5\naction_trace_summary: 1.pyautogui.click(x=500, y=500) | 2.pyautogui.hotkey('ctrl', 'a') | 3.pyautogui.click(x=250, y=450) | 4.pyautogui.click(x=250, y=450) | 5.pyautogui.click(x=250, y=450)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=500, y=500)",
+        "pyautogui.hotkey('ctrl', 'a')",
+        "pyautogui.click(x=250, y=450)",
+        "pyautogui.click(x=250, y=450)",
+        "pyautogui.click(x=250, y=450)"
+      ],
+      "raw_model_texts": [
+        "The document appears to be empty or the content is not visible in the current screenshot. To proceed with setting up tab stops for alignment, I first need to ensure the cursor is in the document area. I will click in the center of the document to place the cursor there.\n\n```python\npyautogui.click(x=500, y=500)\n```",
+        "To achieve the desired alignment using tab stops, I need to:\n1.  Select the entire text.\n2.  Set a tab stop at the position where the first three words end (after \"Please find the\").\n3.  Set the alignment of the text *after* the tab stop to be right-aligned.\n\nFirst, I will select all the text in the document.\n\n```python\npyautogui.hotkey('ctrl', 'a')\n```",
+        "```python\npyautogui.click(x=250, y=450)\n```",
+        "```python\npyautogui.click(x=250, y=450)\n```",
+        "```python\npyautogui.click(x=250, y=450)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0e47de2a-32e0-456c-a366-8c607ef7a9d2",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0e47de2a-32e0-456c-a366-8c607ef7a9d2.json",
+      "instruction": "Add page number for every page at the bottom left",
+      "phase": "G7.P",
+      "elapsed_s": 63.471,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0e47de2a-32e0-456c-a366-8c607ef7a9d2 succeeded=False n_steps=4\naction_trace_summary: 1.menu_click(32, 67) | 2.menu_click(142, 67) | 3.menu_click(142, 67) | 4.menu_click(142, 67)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "menu_click(32, 67)",
+        "menu_click(142, 67)",
+        "menu_click(142, 67)",
+        "menu_click(142, 67)"
+      ],
+      "raw_model_texts": [
+        "```python\nmenu_click(32, 67)\n```",
+        "```python\nmenu_click(142, 67)\n```",
+        "```python\nmenu_click(142, 67)\n```",
+        "```python\nmenu_click(142, 67)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

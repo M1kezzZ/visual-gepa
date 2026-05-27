@@ -1,0 +1,145 @@
+{
+  "phase": "G2.P",
+  "tasks": [
+    {
+      "task_id": "chrome/030eeff7-b492-4218-b312-701ec99ee0cc",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/030eeff7-b492-4218-b312-701ec99ee0cc.json",
+      "instruction": "Can you enable the 'Do Not Track' feature in Chrome to enhance my online privacy?",
+      "phase": "G2.P",
+      "elapsed_s": 66.533,
+      "crashed_with": null,
+      "n_steps": 5,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=030eeff7-b492-4218-b312-701ec99ee0cc succeeded=False n_steps=5\naction_trace_summary: 1.pyautogui.click(x=50, y=10) | 2.pyautogui.click(x=850, y=170) | 3.pyautogui.click(x=985, y=81) | 4.pyautogui.click(x=985, y=81) | 5.pyautogui.click(x=985, y=81)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=50, y=10)",
+        "pyautogui.click(x=850, y=170)",
+        "pyautogui.click(x=985, y=81)",
+        "pyautogui.click(x=985, y=81)",
+        "pyautogui.click(x=985, y=81)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=50, y=10)\n```",
+        "```python\npyautogui.click(x=850, y=170)\n```",
+        "```python\npyautogui.click(x=985, y=81)\n```",
+        "```python\npyautogui.click(x=985, y=81)\n```",
+        "```python\npyautogui.click(x=985, y=81)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/045bf3ff-9077-4b86-b483-a1040a949cff",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/045bf3ff-9077-4b86-b483-a1040a949cff.json",
+      "instruction": "Could you turn my image into CYMK mode within GIMP ?",
+      "phase": "G2.P",
+      "elapsed_s": 64.032,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=045bf3ff-9077-4b86-b483-a1040a949cff succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=493) | 2.pyautogui.click(x=17, y=493) | 3.pyautogui.click(x=17, y=493)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=493)",
+        "pyautogui.click(x=17, y=493)",
+        "pyautogui.click(x=17, y=493)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=493)\n```",
+        "```python\npyautogui.click(x=17, y=493)\n```",
+        "```python\npyautogui.click(x=17, y=493)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/2a729ded-3296-423d-aec4-7dd55ed5fbb3",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/2a729ded-3296-423d-aec4-7dd55ed5fbb3.json",
+      "instruction": "Could you make the background of this image transparent for me?",
+      "phase": "G2.P",
+      "elapsed_s": 92.224,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=2a729ded-3296-423d-aec4-7dd55ed5fbb3 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=483) | 2.pyautogui.click(x=17, y=483) | 3.pyautogui.click(x=17, y=483)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=483)",
+        "pyautogui.click(x=17, y=483)",
+        "pyautogui.click(x=17, y=483)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=483)\n```",
+        "```python\npyautogui.click(x=17, y=483)\n```",
+        "```python\npyautogui.click(x=17, y=483)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d.json",
+      "instruction": "Set the minimum number of undo steps to 100.",
+      "phase": "G2.P",
+      "elapsed_s": 100.127,
+      "crashed_with": null,
+      "n_steps": 5,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=7b7617bd-57cc-468e-9c91-40c4ec2bcb3d succeeded=False n_steps=5\naction_trace_summary: 1.pyautogui.click(x=17, y=59) | 2.pyautogui.click(x=980, y=420) | 3.pyautogui.click(x=17, y=59) | 4.pyautogui.click(x=17, y=59) | 5.pyautogui.click(x=17, y=59)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=980, y=420)",
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=980, y=420)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_calc/035f41ba-6653-43ab-aa63-c86d449d62e5",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/035f41ba-6653-43ab-aa63-c86d449d62e5.json",
+      "instruction": "Help me fill in the Gross profit column by subtracting all the available expenses including discounts, allowances, material and labor charges, and overhead from the actual sale, i.e., the sales after deducting the returns. Then under column A named \"Year_Profit\" in a new sheet \"Sheet2\", display the Year Column in Sheet 1 as text appended by a \"_\" with the corresponding integer digits of Gross Profit value.",
+      "phase": "G2.P",
+      "elapsed_s": 93.319,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=035f41ba-6653-43ab-aa63-c86d449d62e5 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=500, y=300) | 2.pyautogui.click(x=750, y=300) | 3.pyautogui.click(x=750, y=300) | 4.pyautogui.click(x=750, y=300)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=500, y=300)",
+        "pyautogui.click(x=750, y=300)",
+        "pyautogui.click(x=750, y=300)",
+        "pyautogui.click(x=750, y=300)"
+      ],
+      "raw_model_texts": [
+        "The user wants to perform calculations in a spreadsheet. The current screenshot shows a LibreOffice Calc window, but the spreadsheet content is not visible; it appears to be a blank or loading state. To proceed with the task of filling in the \"Gross profit\" column and creating a new sheet \"Sheet2\", I first need to ensure the spreadsheet is active and visible. I will click in the center of the spreadsheet area to focus the window and potentially trigger the display of the data if it's just a UI delay.\n\n```python\npyautogui.click(x=500, y=300)\n```",
+        "The user wants to calculate the \"Gross Profit\" and then create a new sheet \"Sheet2\" with a specific format. The current screenshot shows the data in \"Sheet1\". The first step is to calculate the Gross Profit for the first row (2015) to establish the formula.\n\nThe formula for Gross Profit is:\n`Net Sales - Discounts and Allowances - Material Charges - Labor Charges - Overhead`\n\nLooking at the columns:\n- Net Sales is in column E.\n- Discounts and Allowances is in column D.\n- Material Charges is in column F.\n- Labor Charges is in column G.\n- Overhead is in column H.\n\nSo the formula for cell J2 (Gross Profit for 2015) should be:\n`=E2-D2-F2-G2-H2`\n\nI will click on cell J2 to select it and then type the formula.\n\n```python\npyautogui.click(x=750, y=300)\n```",
+        "The previous action selected the entire column F (\"Materials Charges\") instead of clicking on cell J2. I need to correct this by clicking on cell J2 to enter the formula for the first row of Gross Profit. Based on the visible grid, J2 is in the 10th column and the 2nd row.\n\n```python\npyautogui.click(x=750, y=300)\n```",
+        "The previous action selected the entire column F. I need to click on cell J2 to start entering the formula for Gross Profit. Based on the screenshot, column J is the 10th column and row 2 is the first data row.\n\n```python\npyautogui.click(x=750, y=300)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

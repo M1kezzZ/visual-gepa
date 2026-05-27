@@ -1,0 +1,141 @@
+{
+  "phase": "G3.C0",
+  "tasks": [
+    {
+      "task_id": "chrome/030eeff7-b492-4218-b312-701ec99ee0cc",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/030eeff7-b492-4218-b312-701ec99ee0cc.json",
+      "instruction": "Can you enable the 'Do Not Track' feature in Chrome to enhance my online privacy?",
+      "phase": "G3.C0",
+      "elapsed_s": 59.038,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=030eeff7-b492-4218-b312-701ec99ee0cc succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=59) | 2.pyautogui.click(x=985, y=365) | 3.pyautogui.click(x=985, y=365) | 4.pyautogui.click(x=985, y=365)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=985, y=365)",
+        "pyautogui.click(x=985, y=365)",
+        "pyautogui.click(x=985, y=365)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=985, y=365)\n```",
+        "```python\npyautogui.click(x=985, y=365)\n```",
+        "```python\npyautogui.click(x=985, y=365)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e.json",
+      "instruction": "Create a Pivot Table in a new sheet (Sheet2) to count how many times each \"Invoice No.\" appears.",
+      "phase": "G3.C0",
+      "elapsed_s": 95.244,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=1954cced-e748-45c4-9c26-9855b97fbc5e succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=500, y=300) | 2.pyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350) | 3.pyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350) | 4.pyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=500, y=300)",
+        "pyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350)",
+        "pyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350)",
+        "pyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350)"
+      ],
+      "raw_model_texts": [
+        "The LibreOffice Calc window is currently blank, which suggests the file `Invoices.xlsx` might not have loaded its data yet, or the spreadsheet is empty. To proceed with creating a Pivot Table, I first need to ensure the data is visible. I will click inside the spreadsheet grid to activate it and check if data loads or if I need to open the file from the menu.\n\n```python\npyautogui.click(x=500, y=300)\n```",
+        "The data is visible in Sheet1. The task requires creating a Pivot Table in a new sheet named 'Sheet2' to count occurrences of \"Invoice No.\".\n\nFirst, I need to select the entire data range including headers to define the source for the Pivot Table. The data starts at A1 and goes to G19. I will select the range A1:G19.\n\n```python\npyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350)\n```",
+        "The previous action selected the entire column D (\"Product\") instead of the data range. I need to select the correct range A1:G19 to include all columns (Invoice No., Date, Sales Rep, Product, Price, Units, Sales) so that LibreOffice Calc can use it to create the Pivot Table. I will click on cell A1 and drag to cell G19.\n\n```python\npyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350)\n```",
+        "The previous action selected the entire column D (\"Product\") instead of the data range. I need to select the correct range A1:G19 to include all columns (Invoice No., Date, Sales Rep, Product, Price, Units, Sales) so that LibreOffice Calc can use it to create the Pivot Table. I will click on cell A1 and drag to cell G19.\n\n```python\npyautogui.click(x=80, y=280)\npyautogui.dragTo(x=750, y=350)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0810415c-bde4-4443-9047-d5f70165a697",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0810415c-bde4-4443-9047-d5f70165a697.json",
+      "instruction": "Make the line spacing of first two paragraph into double line spacing",
+      "phase": "G3.C0",
+      "elapsed_s": 56.279,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0810415c-bde4-4443-9047-d5f70165a697 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=336, y=290) | 2.pyautogui.click(x=336, y=290) | 3.pyautogui.click(x=336, y=290)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=336, y=290)",
+        "pyautogui.click(x=336, y=290)",
+        "pyautogui.click(x=336, y=290)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=336, y=290)\n```",
+        "```python\npyautogui.click(x=336, y=290)\n```",
+        "```python\npyautogui.click(x=336, y=290)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0a0faba3-5580-44df-965d-f562a99b291c",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0a0faba3-5580-44df-965d-f562a99b291c.json",
+      "instruction": "I would like to make the first three words of the sentence left-aligned and the rest right-aligned. I basically want to have some empty space in the middle to add some photos. Assume that every sentence will have at least three words. Could you help me on alignment for me using tabstops?",
+      "phase": "G3.C0",
+      "elapsed_s": 55.358,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0a0faba3-5580-44df-965d-f562a99b291c succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=309) | 2.pyautogui.click(x=17, y=309) | 3.pyautogui.click(x=17, y=309)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=309)",
+        "pyautogui.click(x=17, y=309)",
+        "pyautogui.click(x=17, y=309)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=309)\n```",
+        "```python\npyautogui.click(x=17, y=309)\n```",
+        "```python\npyautogui.click(x=17, y=309)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568.json",
+      "instruction": "I am writing a word list for a dyslexic kid. To ease things for him, I want to use red for words start with vowels and blue for those start with non-vowels. Can you do this for me? I'm doing it manually, and it is a pain.",
+      "phase": "G3.C0",
+      "elapsed_s": 71.972,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=8472fece-c7dd-4241-8d65-9b3cd1a0b568 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=303) | 2.pyautogui.click(x=960, y=750) | 3.pyautogui.click(x=960, y=750) | 4.pyautogui.click(x=960, y=750)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=303)",
+        "pyautogui.click(x=960, y=750)",
+        "pyautogui.click(x=960, y=750)",
+        "pyautogui.click(x=960, y=750)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=303)\n```",
+        "```python\npyautogui.click(x=960, y=750)\n```",
+        "```python\npyautogui.click(x=960, y=750)\n```",
+        "```python\npyautogui.click(x=960, y=750)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "phase": "G2.C2",
+  "tasks": [
+    {
+      "task_id": "chrome/12086550-11c0-466b-b367-1d9e75b3910e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/12086550-11c0-466b-b367-1d9e75b3910e.json",
+      "instruction": "Computer, please navigate to the area in my browser settings where my passwords are stored. I want to check my login information for Etsy without revealing it just yet.",
+      "phase": "G2.C2",
+      "elapsed_s": 59.301,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=12086550-11c0-466b-b367-1d9e75b3910e succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=56) | 2.pyautogui.click(x=985, y=81) | 3.pyautogui.click(x=985, y=81) | 4.pyautogui.click(x=985, y=81)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=56)",
+        "pyautogui.click(x=985, y=81)",
+        "pyautogui.click(x=985, y=81)",
+        "pyautogui.click(x=985, y=81)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=56)\n```",
+        "```python\npyautogui.click(x=985, y=81)\n```",
+        "```python\npyautogui.click(x=985, y=81)\n```",
+        "```python\npyautogui.click(x=985, y=81)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0.json",
+      "instruction": "Find the Driver License Eligibility Requirements",
+      "phase": "G2.C2",
+      "elapsed_s": 81.331,
+      "crashed_with": null,
+      "n_steps": 5,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=a728a36e-8bf1-4bb6-9a03-ef039a5233f0 succeeded=False n_steps=5\naction_trace_summary: 1.pyautogui.click(x=492, y=253) | 2.pyautogui.click(x=226, y=400) | 3.pyautogui.click(x=231, y=400) | 4.pyautogui.click(x=231, y=400) | 5.pyautogui.click(x=231, y=400)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=492, y=253)",
+        "pyautogui.click(x=226, y=400)",
+        "pyautogui.click(x=231, y=400)",
+        "pyautogui.click(x=231, y=400)",
+        "pyautogui.click(x=231, y=400)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=492, y=253)\n```",
+        "```python\npyautogui.click(x=226, y=400)\n```",
+        "```python\npyautogui.click(x=231, y=400)\n```",
+        "```python\npyautogui.click(x=231, y=400)\n```",
+        "```python\npyautogui.click(x=231, y=400)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/2a729ded-3296-423d-aec4-7dd55ed5fbb3",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/2a729ded-3296-423d-aec4-7dd55ed5fbb3.json",
+      "instruction": "Could you make the background of this image transparent for me?",
+      "phase": "G2.C2",
+      "elapsed_s": 90.096,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=2a729ded-3296-423d-aec4-7dd55ed5fbb3 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=483) | 2.pyautogui.click(x=17, y=483) | 3.pyautogui.click(x=17, y=483)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=483)",
+        "pyautogui.click(x=17, y=483)",
+        "pyautogui.click(x=17, y=483)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=483)\n```",
+        "```python\npyautogui.click(x=17, y=483)\n```",
+        "```python\npyautogui.click(x=17, y=483)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/0ed39f63-6049-43d4-ba4d-5fa2fe04a951",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/0ed39f63-6049-43d4-ba4d-5fa2fe04a951.json",
+      "instruction": "Please help me change all the places in this document that say \"text\" to \"test\".",
+      "phase": "G2.C2",
+      "elapsed_s": 62.581,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0ed39f63-6049-43d4-ba4d-5fa2fe04a951 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=306) | 2.pyautogui.click(x=17, y=306) | 3.pyautogui.click(x=17, y=306)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=306)",
+        "pyautogui.click(x=17, y=306)",
+        "pyautogui.click(x=17, y=306)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=306)\n```",
+        "```python\npyautogui.click(x=17, y=306)\n```",
+        "```python\npyautogui.click(x=17, y=306)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/4e60007a-f5be-4bfc-9723-c39affa0a6d3",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/4e60007a-f5be-4bfc-9723-c39affa0a6d3.json",
+      "instruction": "Please help me install the autoDocstring extension in VS Code.",
+      "phase": "G2.C2",
+      "elapsed_s": 47.666,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=4e60007a-f5be-4bfc-9723-c39affa0a6d3 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=184) | 2.pyautogui.click(x=17, y=184) | 3.pyautogui.click(x=17, y=184)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=184)",
+        "pyautogui.click(x=17, y=184)",
+        "pyautogui.click(x=17, y=184)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=184)\n```",
+        "```python\npyautogui.click(x=17, y=184)\n```",
+        "```python\npyautogui.click(x=17, y=184)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

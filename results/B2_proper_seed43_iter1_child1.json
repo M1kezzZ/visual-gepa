@@ -1,0 +1,139 @@
+{
+  "phase": "G1.C1",
+  "tasks": [
+    {
+      "task_id": "chrome/06fe7178-4491-4589-810f-2e2bc9502122",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/06fe7178-4491-4589-810f-2e2bc9502122.json",
+      "instruction": "Can you make my computer bring back the last tab I shut down?",
+      "phase": "G1.C1",
+      "elapsed_s": 72.394,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=06fe7178-4491-4589-810f-2e2bc9502122 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.hotkey('ctrl', 'shift', 't') | 2.pyautogui.hotkey('ctrl', 'shift', 't') | 3.pyautogui.hotkey('ctrl', 'shift', 't')\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.hotkey('ctrl', 'shift', 't')",
+        "pyautogui.hotkey('ctrl', 'shift', 't')",
+        "pyautogui.hotkey('ctrl', 'shift', 't')"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.hotkey('ctrl', 'shift', 't')\n```",
+        "```python\npyautogui.hotkey('ctrl', 'shift', 't')\n```",
+        "```python\npyautogui.hotkey('ctrl', 'shift', 't')\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0.json",
+      "instruction": "Find the Driver License Eligibility Requirements",
+      "phase": "G1.C1",
+      "elapsed_s": 60.642,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=a728a36e-8bf1-4bb6-9a03-ef039a5233f0 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=242, y=256) | 2.pyautogui.click(x=242, y=256) | 3.pyautogui.click(x=242, y=256)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=242, y=256)",
+        "pyautogui.click(x=242, y=256)",
+        "pyautogui.click(x=242, y=256)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=242, y=256)\n```",
+        "```python\npyautogui.click(x=242, y=256)\n```",
+        "```python\npyautogui.click(x=242, y=256)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d.json",
+      "instruction": "Set the minimum number of undo steps to 100.",
+      "phase": "G1.C1",
+      "elapsed_s": 76.559,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=7b7617bd-57cc-468e-9c91-40c4ec2bcb3d succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=54) | 2.pyautogui.click(x=17, y=54) | 3.pyautogui.click(x=17, y=54)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=54)",
+        "pyautogui.click(x=17, y=54)",
+        "pyautogui.click(x=17, y=54)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=54)\n```",
+        "```python\npyautogui.click(x=17, y=54)\n```",
+        "```python\npyautogui.click(x=17, y=54)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/276cc624-87ea-4f08-ab93-f770e3790175",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/276cc624-87ea-4f08-ab93-f770e3790175.json",
+      "instruction": "Please help me set the current user's line length for code wrapping to 50 characters in VS Code.",
+      "phase": "G1.C1",
+      "elapsed_s": 61.155,
+      "crashed_with": null,
+      "n_steps": 5,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=276cc624-87ea-4f08-ab93-f770e3790175 succeeded=False n_steps=5\naction_trace_summary: 1.pyautogui.click(x=17, y=182) | 2.pyautogui.write(message=\"word wrap\") | 3.pyautogui.click(x=450, y=370) | 4.pyautogui.click(x=450, y=370) | 5.pyautogui.click(x=450, y=370)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=182)",
+        "pyautogui.write(message=\"word wrap\")",
+        "pyautogui.click(x=450, y=370)",
+        "pyautogui.click(x=450, y=370)",
+        "pyautogui.click(x=450, y=370)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=182)\n```",
+        "```python\npyautogui.write(message=\"word wrap\")\n```",
+        "```python\npyautogui.click(x=450, y=370)\n```",
+        "```python\npyautogui.click(x=450, y=370)\n```",
+        "```python\npyautogui.click(x=450, y=370)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994.json",
+      "instruction": "Please help me save current project as workspace \"project\" at \"/home/user/\".",
+      "phase": "G1.C1",
+      "elapsed_s": 49.204,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=5e2d93d8-8ad0-4435-b150-1692aacaa994 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=54) | 2.pyautogui.click(x=17, y=54) | 3.pyautogui.click(x=17, y=54)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=54)",
+        "pyautogui.click(x=17, y=54)",
+        "pyautogui.click(x=17, y=54)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=54)\n```",
+        "```python\npyautogui.click(x=17, y=54)\n```",
+        "```python\npyautogui.click(x=17, y=54)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

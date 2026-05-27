@@ -1,0 +1,173 @@
+{
+  "phase": "G2.C1",
+  "tasks": [
+    {
+      "task_id": "chrome/12086550-11c0-466b-b367-1d9e75b3910e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/12086550-11c0-466b-b367-1d9e75b3910e.json",
+      "instruction": "Computer, please navigate to the area in my browser settings where my passwords are stored. I want to check my login information for Etsy without revealing it just yet.",
+      "phase": "G2.C1",
+      "elapsed_s": 58.392,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=12086550-11c0-466b-b367-1d9e75b3910e succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=56) | 2.pyautogui.click(x=985, y=41) | 3.pyautogui.click(x=985, y=41) | 4.pyautogui.click(x=985, y=41)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=56)",
+        "pyautogui.click(x=985, y=41)",
+        "pyautogui.click(x=985, y=41)",
+        "pyautogui.click(x=985, y=41)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=56)\n```",
+        "```python\npyautogui.click(x=985, y=41)\n```",
+        "```python\npyautogui.click(x=985, y=41)\n```",
+        "```python\npyautogui.click(x=985, y=41)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_calc/0326d92d-d218-48a8-9ca1-981cd6d064c7",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/0326d92d-d218-48a8-9ca1-981cd6d064c7.json",
+      "instruction": "Calculate the total sales in an underneath row called \"Total\" and display the total of each month as bars. Then calculate the month-on-month growth percentage for Feb to Jun in another row called \"Growth\" and show them in a line chart (Jan should be omitted in the chart as well). Set the chart titles as the two row headers respectively.",
+      "phase": "G2.C1",
+      "elapsed_s": 92.664,
+      "crashed_with": null,
+      "n_steps": 5,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0326d92d-d218-48a8-9ca1-981cd6d064c7 succeeded=False n_steps=5\naction_trace_summary: 1.pyautogui.click(x=46, y=37) | 2.pyautogui.click(x=17, y=373) | 3.pyautogui.click(x=117, y=466) | 4.pyautogui.click(x=117, y=466) | 5.pyautogui.click(x=117, y=466)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=46, y=37)",
+        "pyautogui.click(x=17, y=373)",
+        "pyautogui.click(x=117, y=466)",
+        "pyautogui.click(x=117, y=466)",
+        "pyautogui.click(x=117, y=466)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=46, y=37)\n```",
+        "```python\npyautogui.click(x=17, y=373)\n```",
+        "```python\npyautogui.click(x=117, y=466)\n```",
+        "```python\npyautogui.click(x=117, y=466)\n```",
+        "```python\npyautogui.click(x=117, y=466)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e.json",
+      "instruction": "Create a Pivot Table in a new sheet (Sheet2) to count how many times each \"Invoice No.\" appears.",
+      "phase": "G2.C1",
+      "elapsed_s": 105.475,
+      "crashed_with": null,
+      "n_steps": 6,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=1954cced-e748-45c4-9c26-9855b97fbc5e succeeded=False n_steps=6\naction_trace_summary: 1.pyautogui.click(x=500, y=400) | 2.pyautogui.click(x=210, y=70) | 3.pyautogui.click(x=130, y=140) | 4.pyautogui.click(x=118, y=70) | 5.pyautogui.click(x=118, y=70) | 6.pyautogui.click(x=118, y=70)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=500, y=400)",
+        "pyautogui.click(x=210, y=70)",
+        "pyautogui.click(x=130, y=140)",
+        "pyautogui.click(x=118, y=70)",
+        "pyautogui.click(x=118, y=70)",
+        "pyautogui.click(x=118, y=70)"
+      ],
+      "raw_model_texts": [
+        "The current screenshot shows a LibreOffice Calc window with a file named \"Invoices.xlsx\" open, but the spreadsheet area is blank or not visible. To create a Pivot Table, I first need to ensure the data is visible and that I can interact with the spreadsheet.\n\nSince the spreadsheet area is not visible, I should click on the main area of the spreadsheet to bring it into focus or reveal the data.\n\n```python\npyautogui.click(x=500, y=400)\n```",
+        "```python\npyautogui.click(x=210, y=70)\n```",
+        "```python\npyautogui.click(x=130, y=140)\n```",
+        "```python\npyautogui.click(x=118, y=70)\n```",
+        "```python\npyautogui.click(x=118, y=70)\n```",
+        "```python\npyautogui.click(x=118, y=70)\n```"
+      ],
+      "n_distinct_actions": 4,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/0ed39f63-6049-43d4-ba4d-5fa2fe04a951",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/0ed39f63-6049-43d4-ba4d-5fa2fe04a951.json",
+      "instruction": "Please help me change all the places in this document that say \"text\" to \"test\".",
+      "phase": "G2.C1",
+      "elapsed_s": 151.511,
+      "crashed_with": null,
+      "n_steps": 15,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0ed39f63-6049-43d4-ba4d-5fa2fe04a951 succeeded=False n_steps=15\naction_trace_summary: 1.pyautogui.click(x=17, y=306) | 2.pyautogui.click(x=105, y=70) | 3.pyautogui.click(x=68, y=70) | 4.pyautogui.click(x=105, y=70) | 5.pyautogui.click(x=68, y=70) | 6.pyautogui.click(x=105, y=70) | 7.pyautogui.click(x=68, y=70) | 8.pyautogui.click(x=105, y=70) | 9.pyautogui.click(x=68, y=70) | 10.pyautogui.click(x=105, y=70) | 11.pyautogui.click(x=68, y=70) | 12.pyautogui.click(x=105, y=70) | 13.pyautogui.click(x=68, y=70) | 14.pyautogui.click(x=105, y=70) | 15.pyautogui.click(x=68, y=70)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=306)",
+        "pyautogui.click(x=105, y=70)",
+        "pyautogui.click(x=68, y=70)",
+        "pyautogui.click(x=105, y=70)",
+        "pyautogui.click(x=68, y=70)",
+        "pyautogui.click(x=105, y=70)",
+        "pyautogui.click(x=68, y=70)",
+        "pyautogui.click(x=105, y=70)",
+        "pyautogui.click(x=68, y=70)",
+        "pyautogui.click(x=105, y=70)",
+        "pyautogui.click(x=68, y=70)",
+        "pyautogui.click(x=105, y=70)",
+        "pyautogui.click(x=68, y=70)",
+        "pyautogui.click(x=105, y=70)",
+        "pyautogui.click(x=68, y=70)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=306)\n```",
+        "```python\npyautogui.click(x=105, y=70)\n```",
+        "```python\npyautogui.click(x=68, y=70)\n```",
+        "```python\npyautogui.click(x=105, y=70)\n```",
+        "```python\npyautogui.click(x=68, y=70)\n```",
+        "```python\npyautogui.click(x=105, y=70)\n```",
+        "```python\npyautogui.click(x=68, y=70)\n```",
+        "```python\npyautogui.click(x=105, y=70)\n```",
+        "```python\npyautogui.click(x=68, y=70)\n```",
+        "```python\npyautogui.click(x=105, y=70)\n```",
+        "```python\npyautogui.click(x=68, y=70)\n```",
+        "```python\npyautogui.click(x=105, y=70)\n```",
+        "```python\npyautogui.click(x=68, y=70)\n```",
+        "```python\npyautogui.click(x=105, y=70)\n```",
+        "```python\npyautogui.click(x=68, y=70)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": null,
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/276cc624-87ea-4f08-ab93-f770e3790175",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/276cc624-87ea-4f08-ab93-f770e3790175.json",
+      "instruction": "Please help me set the current user's line length for code wrapping to 50 characters in VS Code.",
+      "phase": "G2.C1",
+      "elapsed_s": 64.596,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=276cc624-87ea-4f08-ab93-f770e3790175 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=17, y=182) | 2.pyautogui.click(x=300, y=130) | 3.pyautogui.click(x=300, y=130) | 4.pyautogui.click(x=300, y=130)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=182)",
+        "pyautogui.click(x=300, y=130)",
+        "pyautogui.click(x=300, y=130)",
+        "pyautogui.click(x=300, y=130)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=182)\n```",
+        "```python\npyautogui.click(x=300, y=130)\n```",
+        "```python\npyautogui.click(x=300, y=130)\n```",
+        "```python\npyautogui.click(x=300, y=130)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

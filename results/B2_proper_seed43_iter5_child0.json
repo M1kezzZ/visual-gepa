@@ -1,0 +1,165 @@
+{
+  "phase": "G5.C0",
+  "tasks": [
+    {
+      "task_id": "libreoffice_calc/0326d92d-d218-48a8-9ca1-981cd6d064c7",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/0326d92d-d218-48a8-9ca1-981cd6d064c7.json",
+      "instruction": "Calculate the total sales in an underneath row called \"Total\" and display the total of each month as bars. Then calculate the month-on-month growth percentage for Feb to Jun in another row called \"Growth\" and show them in a line chart (Jan should be omitted in the chart as well). Set the chart titles as the two row headers respectively.",
+      "phase": "G5.C0",
+      "elapsed_s": 96.115,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0326d92d-d218-48a8-9ca1-981cd6d064c7 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.hotkey('ctrl', 'o') | 2.pyautogui.click(x=230, y=150) | 3.pyautogui.click(x=230, y=150) | 4.pyautogui.click(x=230, y=150)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.hotkey('ctrl', 'o')",
+        "pyautogui.click(x=230, y=150)",
+        "pyautogui.click(x=230, y=150)",
+        "pyautogui.click(x=230, y=150)"
+      ],
+      "raw_model_texts": [
+        "The LibreOffice Calc window is currently blank, but the task requires working with a file named \"SalesRep.xlsx\". The first step is to open this file. I will use the keyboard shortcut Ctrl+O to open the file dialog.\n\n```python\npyautogui.hotkey('ctrl', 'o')\n```",
+        "The file \"SalesRep.xlsx\" is already open in the background, but the \"Open\" dialog is currently active and blocking the view. I need to close this dialog to proceed with the task. I will click the \"Cancel\" button to close the dialog and return to the spreadsheet.\n\n```python\npyautogui.click(x=230, y=150)\n```",
+        "The \"Open\" dialog is still active and blocking the view of the spreadsheet. I need to close this dialog to proceed with the task. I will click the \"Cancel\" button to close the dialog and return to the spreadsheet.\n\n```python\npyautogui.click(x=230, y=150)\n```",
+        "The \"Open\" dialog is still active and blocking the view of the spreadsheet. I need to close this dialog to proceed with the task. I will click the \"Cancel\" button to close the dialog and return to the spreadsheet.\n\n```python\npyautogui.click(x=230, y=150)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_calc/04d9aeaf-7bed-4024-bedb-e10e6f00eb7f",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/04d9aeaf-7bed-4024-bedb-e10e6f00eb7f.json",
+      "instruction": "In a new sheet (\"Sheet2\") with 4 headers \"Year\", \"CA changes\", \"FA changes\", and \"OA changes\", calculate the percentage annual changes compared to last year in 2015 to 2019 for the Current Assets, Fixed Assets, and Other Assets columns. ",
+      "phase": "G5.C0",
+      "elapsed_s": 196.303,
+      "crashed_with": null,
+      "n_steps": 13,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=04d9aeaf-7bed-4024-bedb-e10e6f00eb7f succeeded=False n_steps=13\naction_trace_summary: 1.WAIT | 2.pyautogui.click(x=120, y=980) | 3.pyautogui.rightClick(x=120, y=980) | 4.pyautogui.click(x=90, y=720) | 5.pyautogui.click(x=90, y=720) | 6.pyautogui.rightClick(x=120, y=980) | 7.pyautogui.click(x=90, y=720) | 8.pyautogui.click(x=214, y=67) | 9.pyautogui.click(x=130, y=100) | 10.pyautogui.click(x=130, y=100) | 11.pyautogui.click(x=228, y=150) | 12.pyautogui.click(x=228, y=150) | 13.pyautogui.click(x=228, y=150)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "WAIT",
+        "pyautogui.click(x=120, y=980)",
+        "pyautogui.rightClick(x=120, y=980)",
+        "pyautogui.click(x=90, y=720)",
+        "pyautogui.click(x=90, y=720)",
+        "pyautogui.rightClick(x=120, y=980)",
+        "pyautogui.click(x=90, y=720)",
+        "pyautogui.click(x=214, y=67)",
+        "pyautogui.click(x=130, y=100)",
+        "pyautogui.click(x=130, y=100)",
+        "pyautogui.click(x=228, y=150)",
+        "pyautogui.click(x=228, y=150)",
+        "pyautogui.click(x=228, y=150)"
+      ],
+      "raw_model_texts": [
+        "The LibreOffice Calc window is currently loading the document \"SmallBalanceSheet.xlsx\". The main content area is blank, and a \"Load document\" progress bar is visible at the bottom. I need to wait for the document to fully load before I can proceed with creating a new sheet and entering data.\n\n```python\nWAIT\n```",
+        "The document is now fully loaded. I need to create a new sheet named \"Sheet2\". I will click on the \"Sheet1\" tab at the bottom of the window to access the sheet management options, which typically allows inserting a new sheet.\n\n```python\npyautogui.click(x=120, y=980)\n```",
+        "The previous click on the \"Sheet1\" tab did not trigger the sheet insertion menu. I will try right-clicking on the \"Sheet1\" tab to open the context menu, which should provide an option to insert a new sheet.\n\n```python\npyautogui.rightClick(x=120, y=980)\n```",
+        "The right-click context menu is open on the \"Sheet1\" tab. I need to select the \"Insert...\" option from this menu to create a new sheet.\n\n```python\npyautogui.click(x=90, y=720)\n```",
+        "The right-click context menu is open on the \"Sheet1\" tab. I need to select the \"Insert...\" option from this menu to create a new sheet.\n\n```python\npyautogui.click(x=90, y=720)\n```",
+        "The right-click context menu is no longer visible in the current screenshot, which means the previous click action likely closed it without selecting the \"Insert...\" option. I need to right-click on the \"Sheet1\" tab again to bring up the context menu and then select \"Insert...\".\n\n```python\npyautogui.rightClick(x=120, y=980)\n```",
+        "The context menu is open on the \"Sheet1\" tab. I need to click on the \"Insert...\" option to create a new sheet.\n\n```python\npyautogui.click(x=90, y=720)\n```",
+        "The previous attempts to insert a new sheet via the context menu on the \"Sheet1\" tab have failed. I will try a different approach: using the \"Sheet\" menu in the menu bar to insert a new sheet.\n\n```python\npyautogui.click(x=214, y=67)\n```",
+        "The \"Insert\" menu is open. I need to select the \"Sheet...\" option to create a new sheet.\n\n```python\npyautogui.click(x=130, y=100)\n```",
+        "The \"Insert\" menu is open, and I need to select the \"Sheet...\" option to create a new sheet.\n\n```python\npyautogui.click(x=130, y=100)\n```",
+        "The \"Open\" dialog is currently blocking the spreadsheet. I need to close this dialog to return to the spreadsheet and proceed with creating a new sheet. I will click the \"Cancel\" button.\n\n```python\npyautogui.click(x=228, y=150)\n```",
+        "The \"Open\" dialog is still open and blocking the spreadsheet. I need to close this dialog to return to the spreadsheet and proceed with creating a new sheet. I will click the \"Cancel\" button.\n\n```python\npyautogui.click(x=228, y=150)\n```",
+        "The \"Open\" dialog is still open and blocking the spreadsheet. I need to close this dialog to return to the spreadsheet and proceed with creating a new sheet. I will click the \"Cancel\" button.\n\n```python\npyautogui.click(x=228, y=150)\n```"
+      ],
+      "n_distinct_actions": 7,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0b17a146-2934-46c7-8727-73ff6b6483e8",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0b17a146-2934-46c7-8727-73ff6b6483e8.json",
+      "instruction": "Help me change the 2 in \"H2O\" to a subscript.",
+      "phase": "G5.C0",
+      "elapsed_s": 65.668,
+      "crashed_with": null,
+      "n_steps": 4,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0b17a146-2934-46c7-8727-73ff6b6483e8 succeeded=False n_steps=4\naction_trace_summary: 1.pyautogui.click(x=960, y=850) | 2.pyautogui.click(x=460, y=455) | 3.pyautogui.click(x=460, y=455) | 4.pyautogui.click(x=460, y=455)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=960, y=850)",
+        "pyautogui.click(x=460, y=455)",
+        "pyautogui.click(x=460, y=455)",
+        "pyautogui.click(x=460, y=455)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=960, y=850)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```",
+        "```python\npyautogui.click(x=460, y=455)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/0e47de2a-32e0-456c-a366-8c607ef7a9d2",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/0e47de2a-32e0-456c-a366-8c607ef7a9d2.json",
+      "instruction": "Add page number for every page at the bottom left",
+      "phase": "G5.C0",
+      "elapsed_s": 84.973,
+      "crashed_with": null,
+      "n_steps": 6,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=0e47de2a-32e0-456c-a366-8c607ef7a9d2 succeeded=False n_steps=6\naction_trace_summary: 1.import pyautogui | 2.import pyautogui | 3.import pyautogui | 4.import pyautogui | 5.import pyautogui | 6.import pyautogui\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "import pyautogui\n\n# Step 1: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)",
+        "import pyautogui\n\n# Step 2: Click on the 'Header and Footer' option in the 'Insert' menu.\npyautogui.click(x=113, y=113)",
+        "import pyautogui\n\n# Step 3: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)",
+        "import pyautogui\n\n# Step 1: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)",
+        "import pyautogui\n\n# Step 1: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)",
+        "import pyautogui\n\n# Step 1: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)"
+      ],
+      "raw_model_texts": [
+        "```python\nimport pyautogui\n\n# Step 1: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)\n```",
+        "```python\nimport pyautogui\n\n# Step 2: Click on the 'Header and Footer' option in the 'Insert' menu.\npyautogui.click(x=113, y=113)\n```",
+        "```python\nimport pyautogui\n\n# Step 3: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)\n```",
+        "```python\nimport pyautogui\n\n# Step 1: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)\n```",
+        "```python\nimport pyautogui\n\n# Step 1: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)\n```",
+        "```python\nimport pyautogui\n\n# Step 1: Click on the 'Insert' menu in the menu bar.\npyautogui.click(x=113, y=67)\n```"
+      ],
+      "n_distinct_actions": 3,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568.json",
+      "instruction": "I am writing a word list for a dyslexic kid. To ease things for him, I want to use red for words start with vowels and blue for those start with non-vowels. Can you do this for me? I'm doing it manually, and it is a pain.",
+      "phase": "G5.C0",
+      "elapsed_s": 57.91,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=8472fece-c7dd-4241-8d65-9b3cd1a0b568 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=250, y=130) | 2.pyautogui.click(x=250, y=130) | 3.pyautogui.click(x=250, y=130)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=250, y=130)",
+        "pyautogui.click(x=250, y=130)",
+        "pyautogui.click(x=250, y=130)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=250, y=130)\n```",
+        "```python\npyautogui.click(x=250, y=130)\n```",
+        "```python\npyautogui.click(x=250, y=130)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}
