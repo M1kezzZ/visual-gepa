@@ -128,6 +128,7 @@ def run_phase(
             max_steps=args.max_steps,
             headless=True,
             cache_dir=args.cache_dir,
+            early_stop_on_repeated_actions=args.early_stop_on_repeated,
         )
         t0 = time.perf_counter()
         crashed = None
@@ -159,13 +160,17 @@ def run_phase(
                 "actions": actions,
                 "raw_model_texts": raws,
                 "n_distinct_actions": n_distinct(actions),
+                "early_stop_reason": getattr(traj, "early_stop_reason", None),
+                "reward_source": getattr(traj, "reward_source", "unset"),
                 "_traj": traj,  # in-memory, dropped before write
             })
         else:
             rec.update({
                 "n_steps": 0, "final_reward": None, "succeeded": False,
                 "score": None, "feedback": "(crashed)", "actions": [],
-                "raw_model_texts": [], "n_distinct_actions": 0, "_traj": None,
+                "raw_model_texts": [], "n_distinct_actions": 0,
+                "early_stop_reason": None, "reward_source": "crashed_before_eval",
+                "_traj": None,
             })
         records.append(rec)
 
@@ -197,6 +202,28 @@ def main() -> int:
     ap.add_argument("--os-type", default="Ubuntu", choices=["Ubuntu", "Windows"])
     ap.add_argument("--max-steps", type=int, default=15)
     ap.add_argument("--rng-seed", type=int, default=42)
+    ap.add_argument(
+        "--phase-a2-rerun-seed",
+        type=int,
+        default=None,
+        help=(
+            "Optional second seed for variance baseline. When set, runs a "
+            "Phase A2 rollout (vanilla SEED prompt, no patches) at this seed "
+            "and reports per-task |distinct(A1) - distinct(A2)| as the "
+            "diversity noise floor — the threshold the FCVR-induced "
+            "diversity delta (Phase C - Phase A) must exceed to be credible."
+        ),
+    )
+    ap.add_argument(
+        "--early-stop-on-repeated",
+        type=int,
+        default=3,
+        help=(
+            "Early-stop the rollout when this many consecutive normalized "
+            "actions are identical. 0 disables (matches OSWorld leaderboard). "
+            "Default 3 — saves ~87%% vLLM time on click-loop failures."
+        ),
+    )
     ap.add_argument("--cache-dir", default=None)
     ap.add_argument("--reflection-model", default=os.environ.get("REFLECTION_MODEL", DEFAULT_REFLECTION_MODEL))
     ap.add_argument("--clip-model", default="openai/clip-vit-base-patch32")
@@ -251,6 +278,63 @@ def main() -> int:
     phaseA_path = out_path.with_name(out_path.stem + "_phaseA.json")
     A_records = run_phase("A", tasks, args, seed_prompt, phaseA_path)
 
+    # --- PHASE A2 (variance baseline, optional) -----------------------------
+    # Run the SAME SEED prompt on the SAME tasks with a DIFFERENT rng seed.
+    # Then |distinct(A) - distinct(A2)| is the per-task diversity noise floor —
+    # the threshold Phase C's diversity gain must beat to be FCVR-attributable.
+    A2_records: list = []
+    variance_baseline: dict = {}
+    if args.phase_a2_rerun_seed is not None:
+        if args.phase_a2_rerun_seed == args.rng_seed:
+            logger.warning("phase-a2-rerun-seed == rng-seed — variance phase is degenerate")
+        logger.info(
+            "=== PHASE A2: vanilla rollout (variance baseline, seed=%d) ===",
+            args.phase_a2_rerun_seed,
+        )
+        # Note: the rng seed currently only affects FCVR's KMeans; vLLM sampling
+        # is governed by its server-side config (temperature etc.), not the
+        # CLI --rng-seed. Phase A2 therefore measures STOCHASTIC variance from
+        # vLLM sampling alone — exactly the noise floor we want, since FCVR's
+        # +diversity claim must exceed even that.
+        phaseA2_path = out_path.with_name(out_path.stem + "_phaseA2.json")
+        A2_records = run_phase("A2", tasks, args, seed_prompt, phaseA2_path)
+        a2_by_id = {r["task_id"]: r for r in A2_records}
+        per_task_var = []
+        for ra in A_records:
+            rb = a2_by_id.get(ra["task_id"])
+            if rb is None:
+                continue
+            per_task_var.append({
+                "task_id": ra["task_id"],
+                "A_distinct_actions": ra.get("n_distinct_actions"),
+                "A2_distinct_actions": rb.get("n_distinct_actions"),
+                "abs_diversity_drift": abs(
+                    (ra.get("n_distinct_actions") or 0) - (rb.get("n_distinct_actions") or 0)
+                ),
+                "A_reward": ra.get("final_reward"),
+                "A2_reward": rb.get("final_reward"),
+                "reward_drift": (
+                    (rb.get("final_reward") or 0.0) - (ra.get("final_reward") or 0.0)
+                ),
+            })
+        variance_baseline = {
+            "phase_a2_seed": args.phase_a2_rerun_seed,
+            "per_task": per_task_var,
+            "mean_abs_diversity_drift": (
+                sum(p["abs_diversity_drift"] for p in per_task_var) / len(per_task_var)
+                if per_task_var else 0.0
+            ),
+            "max_abs_diversity_drift": (
+                max((p["abs_diversity_drift"] for p in per_task_var), default=0)
+            ),
+        }
+        logger.info(
+            "Phase A2 variance baseline: mean=%.2f max=%d (FCVR diversity Δ "
+            "must exceed this floor to be credible)",
+            variance_baseline["mean_abs_diversity_drift"],
+            variance_baseline["max_abs_diversity_drift"],
+        )
+
     # --- PHASE B: FCVR reflection on failed A-trajectories ---
     failed_trajs = [r["_traj"] for r in A_records if r.get("_traj") and not r["_traj"].succeeded]
     logger.info("=== PHASE B: FCVR reflection on %d failed trajectories ===", len(failed_trajs))
@@ -303,10 +387,18 @@ def main() -> int:
     A_summary = _summarize(A_records)
     C_summary = _summarize(C_records) if C_records else None
     per_task_delta = []
+    pair_audit: dict = {"all_paired": True, "unpaired_task_ids": [], "phase_a_ids": [], "phase_c_ids": []}
     if C_records:
         c_by_id = {r["task_id"]: r for r in C_records}
+        a_ids = [r["task_id"] for r in A_records]
+        c_ids = [r["task_id"] for r in C_records]
+        pair_audit["phase_a_ids"] = a_ids
+        pair_audit["phase_c_ids"] = c_ids
         for ra in A_records:
             rc = c_by_id.get(ra["task_id"])
+            if rc is None:
+                pair_audit["all_paired"] = False
+                pair_audit["unpaired_task_ids"].append(ra["task_id"])
             per_task_delta.append({
                 "task_id": ra["task_id"],
                 "A_reward": ra.get("final_reward"),
@@ -321,7 +413,38 @@ def main() -> int:
                     (rc.get("n_distinct_actions") or 0) - (ra.get("n_distinct_actions") or 0)
                     if rc else None
                 ),
+                "paired": rc is not None,
             })
+        # Hard assertion — codex action item #3. Fail loudly rather than
+        # silently report a wrong delta against a missing pair.
+        if not pair_audit["all_paired"]:
+            logger.error(
+                "🚨 PHASE D pair-audit FAILED: %d task_ids in A have no C pair: %s",
+                len(pair_audit["unpaired_task_ids"]), pair_audit["unpaired_task_ids"],
+            )
+
+    # --- Reward-source assertion (codex action item #4) ---------------------
+    # Every COMPLETED rollout (A, A2, C) must carry reward_source == "env_evaluate".
+    # Anything else means either env.evaluate() raised, the env crashed before
+    # any step ran, or our orchestrator inferred reward heuristically.
+    reward_source_audit: dict = {"clean": True, "violations": []}
+    for label, recs in (("A", A_records), ("A2", A2_records), ("C", C_records)):
+        for r in recs or []:
+            if r.get("crashed_with"):
+                continue  # crashes are expected to lack a reward source
+            src = r.get("reward_source")
+            if src != "env_evaluate":
+                reward_source_audit["clean"] = False
+                reward_source_audit["violations"].append({
+                    "phase": label,
+                    "task_id": r["task_id"],
+                    "reward_source": src,
+                })
+    if not reward_source_audit["clean"]:
+        logger.error(
+            "🚨 reward-source audit FAILED: %d non-env_evaluate sources found",
+            len(reward_source_audit["violations"]),
+        )
 
     elapsed_total = round(time.perf_counter() - t_total, 3)
     finished = datetime.datetime.utcnow().isoformat() + "Z"
@@ -346,6 +469,14 @@ def main() -> int:
             "summary": A_summary,
             "tasks": [{k: v for k, v in r.items() if k != "_traj"} for r in A_records],
         },
+        "phaseA2_variance_baseline": (
+            {
+                "summary": _summarize(A2_records),
+                "tasks": [{k: v for k, v in r.items() if k != "_traj"} for r in A2_records],
+                **variance_baseline,
+            }
+            if A2_records else None
+        ),
         "phaseB": {
             "n_failed_input": len(failed_trajs),
             "n_patches": len(patches),
@@ -359,6 +490,11 @@ def main() -> int:
                 "schema_violations_total": fcvr_record.schema_violations_total,
                 "elapsed_s": round(fcvr_record.elapsed_s, 3),
                 "reflection_stats": fcvr_record.reflection_stats,
+                # Cluster-quality diagnostics (codex action item #2)
+                "silhouette_score": fcvr_record.silhouette_score,
+                "cluster_membership_by_app": fcvr_record.cluster_membership_by_app,
+                "centroid_pairwise_distances": fcvr_record.centroid_pairwise_distances,
+                "action_edit_distance_within_cluster": fcvr_record.action_edit_distance_within_cluster,
             } if fcvr_record else None),
         },
         "phaseC": ({
@@ -367,6 +503,8 @@ def main() -> int:
             "skipped_reason": skip_C_reason,
         } if C_records or skip_C_reason else None),
         "phaseD_delta": per_task_delta,
+        "pair_audit": pair_audit,
+        "reward_source_audit": reward_source_audit,
     }
 
     # Cost approximation (Claude Opus 4.7 vision: $5 / Mtok input, $25 / Mtok output)
@@ -388,11 +526,15 @@ def main() -> int:
         ),
         "got_phaseD_delta": len(per_task_delta) > 0,
         "no_iter_crashed": True,
+        "pair_audit_clean": pair_audit["all_paired"],
+        "reward_source_audit_clean": reward_source_audit["clean"],
         "overall": (
             A_summary["n_completed"] == A_summary["n_tasks"]
             and len(patches) > 0
             and C_records is not None
             and C_summary["n_completed"] == C_summary["n_tasks"]
+            and pair_audit["all_paired"]
+            and reward_source_audit["clean"]
         ),
     }
 

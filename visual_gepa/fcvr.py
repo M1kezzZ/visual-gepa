@@ -59,6 +59,36 @@ class FCVRRunRecord:
     total_latency_s: float = 0.0
     schema_violations_total: int = 0
     elapsed_s: float = 0.0
+    # Cluster-quality diagnostics (added 2026-05-27 per Codex post-run audit).
+    # Distinguishes "failure space is genuinely homogeneous" (acceptable —
+    # patches will all read similar) from "KMeans collapsed onto a single
+    # dominant visual cluster on CLIP" (NOT acceptable — K is over-specified).
+    silhouette_score: float | None = None  # None if n_samples<=K or K<2
+    cluster_membership_by_app: list[dict[str, int]] = field(default_factory=list)
+    centroid_pairwise_distances: list[list[float]] = field(default_factory=list)
+    action_edit_distance_within_cluster: list[dict[str, float]] = field(default_factory=list)
+
+
+def _app_of(task_id: str) -> str:
+    return (task_id or "").split("/", 1)[0] or "unknown"
+
+
+def _levenshtein_tokens(a: list[str], b: list[str]) -> int:
+    """Edit distance over token sequences (insert/delete/substitute=1)."""
+    la, lb = len(a), len(b)
+    if la == 0:
+        return lb
+    if lb == 0:
+        return la
+    prev = list(range(lb + 1))
+    cur = [0] * (lb + 1)
+    for i in range(1, la + 1):
+        cur[0] = i
+        for j in range(1, lb + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            cur[j] = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
+        prev, cur = cur, prev
+    return prev[lb]
 
 
 def _kmeans_clusters(
@@ -160,6 +190,63 @@ class FCVROperator:
         cluster_sizes = [int((labels == c).sum()) for c in range(k_eff)]
         record.cluster_sizes = cluster_sizes
         logger.info("FCVR: %d failed → %d clusters sizes=%s", len(failed_trajectories), k_eff, cluster_sizes)
+
+        # 2b) Cluster-quality diagnostics (Codex post-B2-mini action item).
+        # Silhouette: requires k_eff >= 2 AND n_samples > k_eff.
+        if k_eff >= 2 and traj_vecs.shape[0] > k_eff:
+            try:
+                from sklearn.metrics import silhouette_score
+                record.silhouette_score = float(silhouette_score(traj_vecs, labels))
+            except Exception as e:  # noqa: BLE001
+                logger.warning("silhouette_score failed: %s", e)
+                record.silhouette_score = None
+        # Per-cluster app membership (parses task_id → "<app>/<uuid>").
+        record.cluster_membership_by_app = []
+        for c in range(k_eff):
+            member_idx = np.where(labels == c)[0]
+            app_counts: dict[str, int] = {}
+            for i in member_idx:
+                app = _app_of(getattr(failed_trajectories[int(i)], "task_id", ""))
+                app_counts[app] = app_counts.get(app, 0) + 1
+            record.cluster_membership_by_app.append(app_counts)
+        # Pairwise centroid distances (K×K, symmetric, zero diagonal).
+        record.centroid_pairwise_distances = [
+            [
+                float(np.linalg.norm(centroids[i] - centroids[j]))
+                for j in range(k_eff)
+            ]
+            for i in range(k_eff)
+        ]
+        # Action-trace edit distance within each cluster.
+        # Tokenize action by `parse_action` output stripped of arg whitespace —
+        # i.e. the same string the rollout's repeated-actions early-stop sees.
+        record.action_edit_distance_within_cluster = []
+        for c in range(k_eff):
+            member_idx = np.where(labels == c)[0]
+            seqs = [
+                [(s.action or "").strip() for s in failed_trajectories[int(i)].steps]
+                for i in member_idx
+            ]
+            if len(seqs) < 2:
+                record.action_edit_distance_within_cluster.append({
+                    "cluster_id": int(c),
+                    "n_pairs": 0,
+                    "mean_edit_distance": 0.0,
+                    "max_edit_distance": 0.0,
+                    "mean_len": float(len(seqs[0])) if seqs else 0.0,
+                })
+                continue
+            dists = []
+            for i in range(len(seqs)):
+                for j in range(i + 1, len(seqs)):
+                    dists.append(_levenshtein_tokens(seqs[i], seqs[j]))
+            record.action_edit_distance_within_cluster.append({
+                "cluster_id": int(c),
+                "n_pairs": len(dists),
+                "mean_edit_distance": float(sum(dists) / len(dists)),
+                "max_edit_distance": float(max(dists)),
+                "mean_len": float(sum(len(s) for s in seqs) / len(seqs)),
+            })
 
         patches: list[FCVRPatch] = []
         for c in range(k_eff):

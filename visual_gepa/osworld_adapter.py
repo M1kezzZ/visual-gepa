@@ -60,6 +60,18 @@ class MultimodalTrajectory:
     instruction: str
     steps: list[MultimodalStep] = field(default_factory=list)
     final_reward: float = 0.0
+    # If non-None, the rollout exited before `max_steps` because of a stop
+    # heuristic (e.g. `repeated_actions_3`, `done_token`, `fail_token`,
+    # `env_done`, `env_step_exception`). `None` = ran to `max_steps`.
+    # Provenance: reward still comes from env.evaluate() in all cases.
+    early_stop_reason: str | None = None
+    # Reward provenance: how `final_reward` was set. One of:
+    #   "env_evaluate" — the official `desktop_env.DesktopEnv.evaluate()`
+    #   "env_evaluate_failed" — env.evaluate() raised; final_reward defaulted to 0.0
+    #   "no_steps" — env reset failed before any step ran
+    # Codex post-run audit (2026-05-27) flagged: "verify rewards come from
+    # OSWorld evaluator not inferred logs." This field is the assertion target.
+    reward_source: str = "unset"
 
     @property
     def n_steps(self) -> int:
@@ -234,6 +246,14 @@ class OSWorldAdapter:
       os_type: `"Ubuntu"` or `"Windows"`.
       max_steps: hard cutoff for trajectory length (B1 spec says 30).
       headless: forward to DesktopEnv when supported.
+      early_stop_on_repeated_actions: if the last N normalized actions are
+        all equal AND N >= this threshold, exit the rollout early with
+        `traj.early_stop_reason = "repeated_actions_<N>"`. Default 3.
+        Set to 0 to disable (matches OSWorld leaderboard convention).
+        Rationale: B2 mini (2026-05-27) found 4/5 tasks produced 1 distinct
+        action across all 15 steps — 87% of vLLM cycles were waste on
+        screenshot-identical click-loops. Symmetric application across
+        vanilla & enhanced rollouts keeps A↔C comparisons unbiased.
     """
 
     def __init__(
@@ -247,6 +267,7 @@ class OSWorldAdapter:
         max_steps: int = 30,
         headless: bool = True,
         cache_dir: str | Path | None = None,
+        early_stop_on_repeated_actions: int = 3,
     ) -> None:
         if task_config_path is None and task_dict is None:
             raise ValueError("provide either task_config_path or task_dict")
@@ -262,6 +283,9 @@ class OSWorldAdapter:
         self.os_type = os_type
         self.max_steps = max_steps
         self.headless = headless
+        if not isinstance(early_stop_on_repeated_actions, int) or early_stop_on_repeated_actions < 0:
+            raise ValueError("early_stop_on_repeated_actions must be int >= 0")
+        self.early_stop_on_repeated_actions = early_stop_on_repeated_actions
         # OSWorld DesktopEnv defaults `cache_dir` to "cache" (relative to CWD)
         # and downloads Ubuntu.qcow2.zip to `./docker_vm_data` (also relative).
         # Pin both to an absolute path so re-runs from different working
@@ -359,6 +383,7 @@ class OSWorldAdapter:
                             raw_model_text=response_text,
                         )
                     )
+                    traj.early_stop_reason = "env_step_exception"
                     break
 
                 feedback = (info or {}).get("feedback", "")
@@ -373,16 +398,43 @@ class OSWorldAdapter:
                     )
                 )
 
-                if action.upper().strip() in {"DONE", "FAIL"} or done:
+                action_upper = action.upper().strip()
+                if action_upper == "DONE":
+                    traj.early_stop_reason = "done_token"
+                    break
+                if action_upper == "FAIL":
+                    traj.early_stop_reason = "fail_token"
+                    break
+                if done:
+                    traj.early_stop_reason = "env_done"
                     break
 
-            # Final reward via official OSWorld evaluator.
+                # Early-stop on N-in-a-row identical normalized actions.
+                # Skip the check during the first (N-1) steps; require strictly
+                # N consecutive equal actions to fire (N=0 disables entirely).
+                N = self.early_stop_on_repeated_actions
+                if N > 0 and len(traj.steps) >= N:
+                    tail = [s.action.strip() for s in traj.steps[-N:]]
+                    if all(a == tail[0] and a != "" for a in tail):
+                        traj.early_stop_reason = f"repeated_actions_{N}"
+                        logger.info(
+                            "early-stop: %d consecutive identical actions=%r at step %d",
+                            N, tail[0][:80], step_i,
+                        )
+                        break
+
+            # Final reward via official OSWorld evaluator (always — even on
+            # early-stop). Reward provenance recorded for the post-run audit.
             try:
                 final_reward = float(env.evaluate())
+                traj.reward_source = "env_evaluate"
             except Exception as e:  # noqa: BLE001
                 logger.warning("env.evaluate failed: %s", e)
                 final_reward = 0.0
+                traj.reward_source = "env_evaluate_failed"
             traj.final_reward = final_reward
+            if not traj.steps:
+                traj.reward_source = "no_steps"
             return traj
         finally:
             try:
