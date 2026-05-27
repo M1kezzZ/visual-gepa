@@ -52,13 +52,21 @@ def fmt_ci(m: float, lo: float, hi: float, prec: int = 2) -> str:
 def extract_paired_metrics(data: dict) -> dict:
     """Pull per-task paired (A, C) and (A, A2) records from one result JSON.
 
+    Handles both schemas:
+      - B2_mini  : phaseA, phaseC, phaseA2_variance_baseline
+      - B2_proper: phaseA_vanilla, phaseF_final (no phaseA2)
+
     Returns dict with: ac_reward_deltas, ac_diversity_deltas,
     aa2_diversity_drifts, a_succ, c_succ, a_early_stops, c_early_stops,
-    loop_escapes, n_tasks.
+    loop_escapes, n_tasks. For B2_proper, "C" maps to phaseF_final.
     """
-    A = data["phaseA"]["tasks"]
-    C_pkg = data.get("phaseC") or {}
+    # B2_proper uses phaseA_vanilla; B2_mini uses phaseA
+    A_pkg = data.get("phaseA_vanilla") or data.get("phaseA") or {}
+    A = A_pkg.get("tasks") or []
+    # B2_proper uses phaseF_final; B2_mini uses phaseC
+    C_pkg = data.get("phaseF_final") or data.get("phaseC") or {}
     C = C_pkg.get("tasks") or []
+    # Only B2_mini has phaseA2_variance_baseline
     A2_pkg = data.get("phaseA2_variance_baseline") or {}
     A2 = A2_pkg.get("tasks") or []
 
