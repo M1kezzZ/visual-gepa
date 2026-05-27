@@ -1,0 +1,151 @@
+{
+  "phase": "A",
+  "tasks": [
+    {
+      "task_id": "libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e.json",
+      "instruction": "Create a Pivot Table in a new sheet (Sheet2) to count how many times each \"Invoice No.\" appears.",
+      "phase": "A",
+      "elapsed_s": 106.609,
+      "crashed_with": null,
+      "n_steps": 6,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=1954cced-e748-45c4-9c26-9855b97fbc5e succeeded=False n_steps=6\naction_trace_summary: 1.pyautogui.click(x=100, y=70) | 2.pyautogui.click(x=55, y=92) | 3.pyautogui.click(x=214, y=76) | 4.pyautogui.click(x=142, y=139) | 5.pyautogui.click(x=142, y=139) | 6.pyautogui.click(x=142, y=139)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=100, y=70)",
+        "pyautogui.click(x=55, y=92)",
+        "pyautogui.click(x=214, y=76)",
+        "pyautogui.click(x=142, y=139)",
+        "pyautogui.click(x=142, y=139)",
+        "pyautogui.click(x=142, y=139)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=100, y=70)\n```",
+        "```python\npyautogui.click(x=55, y=92)\n```",
+        "```python\npyautogui.click(x=214, y=76)\n```",
+        "```python\npyautogui.click(x=142, y=139)\n```",
+        "```python\npyautogui.click(x=142, y=139)\n```",
+        "```python\npyautogui.click(x=142, y=139)\n```"
+      ],
+      "n_distinct_actions": 4,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0.json",
+      "instruction": "Find the Driver License Eligibility Requirements",
+      "phase": "A",
+      "elapsed_s": 61.023,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=a728a36e-8bf1-4bb6-9a03-ef039a5233f0 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=246, y=256) | 2.pyautogui.click(x=246, y=256) | 3.pyautogui.click(x=246, y=256)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=246, y=256)",
+        "pyautogui.click(x=246, y=256)",
+        "pyautogui.click(x=246, y=256)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=246, y=256)\n```",
+        "```python\npyautogui.click(x=246, y=256)\n```",
+        "```python\npyautogui.click(x=246, y=256)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568.json",
+      "instruction": "I am writing a word list for a dyslexic kid. To ease things for him, I want to use red for words start with vowels and blue for those start with non-vowels. Can you do this for me? I'm doing it manually, and it is a pain.",
+      "phase": "A",
+      "elapsed_s": 106.292,
+      "crashed_with": null,
+      "n_steps": 6,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=8472fece-c7dd-4241-8d65-9b3cd1a0b568 succeeded=False n_steps=6\naction_trace_summary: 1.WAIT | 2.pyautogui.click(x=268, y=781)\npyautogui.drag(to=(280, 781),  | 3.pyautogui.click(x=268, y=781) | 4.pyautogui.doubleClick(x=268, y=781) | 5.pyautogui.doubleClick(x=268, y=781) | 6.pyautogui.doubleClick(x=268, y=781)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "WAIT",
+        "pyautogui.click(x=268, y=781)\npyautogui.drag(to=(280, 781), duration=0.1)",
+        "pyautogui.click(x=268, y=781)",
+        "pyautogui.doubleClick(x=268, y=781)",
+        "pyautogui.doubleClick(x=268, y=781)",
+        "pyautogui.doubleClick(x=268, y=781)"
+      ],
+      "raw_model_texts": [
+        "The user wants to color words in a document based on their starting letter. The current screen shows LibreOffice 7.3 is loading a document. I need to wait for the document to fully load before I can interact with the text.\n\n```python\nWAIT\n```",
+        "The document is now fully loaded and visible. I can see the table of sight words. The task is to color words starting with vowels red and words starting with consonants blue.\n\nI will start by selecting the first word in the table, which is \"all\". It starts with 'a', a vowel, so it should be red.\n\nTo do this, I need to:\n1.  Select the word \"all\".\n2.  Change its font color to red.\n\nI'll start by clicking and dragging to select the word \"all\".\n\n```python\npyautogui.click(x=268, y=781)\npyautogui.drag(to=(280, 781), duration=0.1)\n```",
+        "The previous action to select the word \"all\" seems to have failed or had no effect, as the screenshot still shows the document without any text selection. The coordinates I used might have been incorrect or the action didn't register.\n\nLet's try a different approach. I will click directly on the word \"all\" to place the cursor there, and then try to select it again. If that doesn't work, I'll try using keyboard shortcuts to select the word.\n\nFirst, I'll click on the word \"all\" to ensure the cursor is positioned correctly.\n\n```python\npyautogui.click(x=268, y=781)\n```",
+        "The previous attempts to select the text \"all\" by clicking and dragging have not been successful, likely due to incorrect coordinates or the nature of the table cells. A more reliable method in LibreOffice Writer for selecting a single word is to double-click on it. Once selected, I can then change the font color.\n\nI will double-click on the word \"all\" to select it.\n\n```python\npyautogui.doubleClick(x=268, y=781)\n```",
+        "The previous attempts to select the text \"all\" by clicking and dragging or double-clicking have not been successful, likely due to incorrect coordinates or the nature of the table cells. A more reliable method in LibreOffice Writer for selecting a single word is to double-click on it. Once selected, I can then change the font color.\n\nI will double-click on the word \"all\" to select it.\n\n```python\npyautogui.doubleClick(x=268, y=781)\n```",
+        "The previous attempts to select the text \"all\" by clicking and dragging or double-clicking have not been successful, likely due to incorrect coordinates or the nature of the table cells. A more reliable method in LibreOffice Writer for selecting a single word is to double-click on it. Once selected, I can then change the font color.\n\nI will double-click on the word \"all\" to select it.\n\n```python\npyautogui.doubleClick(x=268, y=781)\n```"
+      ],
+      "n_distinct_actions": 4,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994.json",
+      "instruction": "Please help me save current project as workspace \"project\" at \"/home/user/\".",
+      "phase": "A",
+      "elapsed_s": 48.369,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=5e2d93d8-8ad0-4435-b150-1692aacaa994 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=56) | 2.pyautogui.click(x=17, y=56) | 3.pyautogui.click(x=17, y=56)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=56)",
+        "pyautogui.click(x=17, y=56)",
+        "pyautogui.click(x=17, y=56)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=56)\n```",
+        "```python\npyautogui.click(x=17, y=56)\n```",
+        "```python\npyautogui.click(x=17, y=56)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d.json",
+      "instruction": "Set the minimum number of undo steps to 100.",
+      "phase": "A",
+      "elapsed_s": 101.071,
+      "crashed_with": null,
+      "n_steps": 5,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=7b7617bd-57cc-468e-9c91-40c4ec2bcb3d succeeded=False n_steps=5\naction_trace_summary: 1.pyautogui.click(x=17, y=59) | 2.pyautogui.click(x=980, y=40) | 3.pyautogui.click(x=17, y=59) | 4.pyautogui.click(x=17, y=59) | 5.pyautogui.click(x=17, y=59)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=980, y=40)",
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=980, y=40)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```"
+      ],
+      "n_distinct_actions": 2,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}

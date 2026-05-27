@@ -1,0 +1,131 @@
+{
+  "phase": "A2",
+  "tasks": [
+    {
+      "task_id": "libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e.json",
+      "instruction": "Create a Pivot Table in a new sheet (Sheet2) to count how many times each \"Invoice No.\" appears.",
+      "phase": "A2",
+      "elapsed_s": 48.443,
+      "crashed_with": null,
+      "n_steps": 1,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=1954cced-e748-45c4-9c26-9855b97fbc5e succeeded=False n_steps=1\naction_trace_summary: 1.FAIL\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "FAIL"
+      ],
+      "raw_model_texts": [
+        "The current screenshot shows a blank LibreOffice Calc window titled \"Invoices.xlsx\". The spreadsheet area is empty, meaning there is no data source (specifically, no \"Invoice No.\" column) to create a Pivot Table from. Without data, it is impossible to create a Pivot Table to count occurrences.\n\nTherefore, the task is infeasible in its current state.\n\n```python\nFAIL\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "fail_token",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0.json",
+      "instruction": "Find the Driver License Eligibility Requirements",
+      "phase": "A2",
+      "elapsed_s": 60.883,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=a728a36e-8bf1-4bb6-9a03-ef039a5233f0 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=242, y=256) | 2.pyautogui.click(x=242, y=256) | 3.pyautogui.click(x=242, y=256)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=242, y=256)",
+        "pyautogui.click(x=242, y=256)",
+        "pyautogui.click(x=242, y=256)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=242, y=256)\n```",
+        "```python\npyautogui.click(x=242, y=256)\n```",
+        "```python\npyautogui.click(x=242, y=256)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568.json",
+      "instruction": "I am writing a word list for a dyslexic kid. To ease things for him, I want to use red for words start with vowels and blue for those start with non-vowels. Can you do this for me? I'm doing it manually, and it is a pain.",
+      "phase": "A2",
+      "elapsed_s": 56.888,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=8472fece-c7dd-4241-8d65-9b3cd1a0b568 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=260, y=710) | 2.pyautogui.click(x=260, y=710) | 3.pyautogui.click(x=260, y=710)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=260, y=710)",
+        "pyautogui.click(x=260, y=710)",
+        "pyautogui.click(x=260, y=710)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=260, y=710)\n```",
+        "```python\npyautogui.click(x=260, y=710)\n```",
+        "```python\npyautogui.click(x=260, y=710)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994.json",
+      "instruction": "Please help me save current project as workspace \"project\" at \"/home/user/\".",
+      "phase": "A2",
+      "elapsed_s": 48.211,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=5e2d93d8-8ad0-4435-b150-1692aacaa994 succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=59) | 2.pyautogui.click(x=17, y=59) | 3.pyautogui.click(x=17, y=59)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    },
+    {
+      "task_id": "gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d",
+      "task_config_path": "third_party/OSWorld/evaluation_examples/examples/gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d.json",
+      "instruction": "Set the minimum number of undo steps to 100.",
+      "phase": "A2",
+      "elapsed_s": 76.807,
+      "crashed_with": null,
+      "n_steps": 3,
+      "final_reward": 0.0,
+      "succeeded": false,
+      "score": 0.0,
+      "feedback": "task_id=7b7617bd-57cc-468e-9c91-40c4ec2bcb3d succeeded=False n_steps=3\naction_trace_summary: 1.pyautogui.click(x=17, y=59) | 2.pyautogui.click(x=17, y=59) | 3.pyautogui.click(x=17, y=59)\nterminal_feedback: (no terminal feedback)",
+      "actions": [
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)",
+        "pyautogui.click(x=17, y=59)"
+      ],
+      "raw_model_texts": [
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```",
+        "```python\npyautogui.click(x=17, y=59)\n```"
+      ],
+      "n_distinct_actions": 1,
+      "early_stop_reason": "repeated_actions_3",
+      "reward_source": "env_evaluate"
+    }
+  ]
+}
