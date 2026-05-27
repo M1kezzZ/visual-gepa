@@ -236,9 +236,46 @@ def score_candidate(records: list[dict]) -> tuple[float, float, float]:
     Higher is better; ties broken first by reward, then success, then
     by lower early-stop rate (proxy for "agent at least tried different
     things instead of click-looping").
+
+    NOTE: this is used to RANK children for picking the best, NOT for the
+    promotion decision. The promotion guard (`should_promote`) is stricter
+    — see codex review (2026-05-27) Q1: tuple-cmp alone degenerates to
+    early-stop-rate when rewards are mostly 0, producing noisy promotions.
     """
     s = summarize(records)
     return (s["mean_reward"], s["success_rate"], 1.0 - s["early_stop_rate"])
+
+
+def should_promote(
+    parent_records: list[dict],
+    child_records: list[dict],
+) -> tuple[bool, str]:
+    """Promotion guard (codex action item, 2026-05-27).
+
+    Accept the child IF any of:
+      1. Strict mean reward improvement
+      2. Strict success-count improvement
+      3. Early-stop reduction by >=2 tasks on minibatch AND no reward regression
+
+    Returns (accept_bool, reason_string).
+    """
+    p_sum = summarize(parent_records)
+    c_sum = summarize(child_records)
+    if c_sum["mean_reward"] > p_sum["mean_reward"]:
+        return True, f"reward_better ({p_sum['mean_reward']:.3f} → {c_sum['mean_reward']:.3f})"
+    if c_sum["n_succeeded"] > p_sum["n_succeeded"]:
+        return True, f"success_better ({p_sum['n_succeeded']} → {c_sum['n_succeeded']})"
+    # Early-stop reduction = fewer click-loop deaths. Require ≥2-task drop
+    # AND no reward regression. Codex flagged the original tuple-cmp as too
+    # lax (would promote on 1-task ES drop, which is within noise at n=5).
+    p_es = int(round(p_sum["early_stop_rate"] * len(parent_records)))
+    c_es = int(round(c_sum["early_stop_rate"] * len(child_records)))
+    if (p_es - c_es) >= 2 and c_sum["mean_reward"] >= p_sum["mean_reward"]:
+        return True, f"early_stop_better_no_reward_regression (ES {p_es} → {c_es}, reward {p_sum['mean_reward']:.3f} ≥ {c_sum['mean_reward']:.3f})"
+    return False, (
+        f"reject (parent: r={p_sum['mean_reward']:.3f}, succ={p_sum['n_succeeded']}, ES={p_es}; "
+        f"child: r={c_sum['mean_reward']:.3f}, succ={c_sum['n_succeeded']}, ES={c_es})"
+    )
 
 
 def main() -> int:
@@ -360,17 +397,21 @@ def main() -> int:
         # Spawn K children = parent + each patch, eval on a random minibatch
         minibatch_idx = sorted(rng.sample(range(len(tasks)), min(args.minibatch_size, len(tasks))))
         minibatch_tasks = [tasks[i] for i in minibatch_idx]
-        # First, eval parent on this minibatch (so we compare apples-to-apples)
-        # Even though we have parent_full_records, the minibatch is a different
-        # subset — we re-eval for an unbiased comparison.
-        # SAVE: maybe re-use cached results from parent_full_records by task_id
-        # to avoid re-running. Big cost savings — let's do it.
-        cached_by_id = {r["task_id"]: r for r in parent_full_records}
-        parent_minibatch = [cached_by_id[t["id"]] for t in minibatch_tasks]
-        parent_minibatch_score = score_candidate(parent_minibatch)
+        # Codex Q2 fix (2026-05-27): re-eval parent FRESH on this minibatch.
+        # Reusing cached records from prior full-eval suffers from optimizer's
+        # curse: K freshly-sampled children max-selected against a stale
+        # parent estimate produces upward-biased acceptance. Cost: +5 rollouts/
+        # iter/seed. Cheaper than false promotions.
+        parent_stream = out_path.with_name(out_path.stem + f"_iter{iter_k}_parent.json")
+        parent_minibatch_records = evaluate_candidate(
+            f"G{iter_k}.P", parent_prompt, minibatch_tasks, args, parent_stream,
+        )
+        parent_minibatch_score = score_candidate(parent_minibatch_records)
         iter_rec["parent_minibatch_score"] = list(parent_minibatch_score)
+        iter_rec["parent_minibatch_summary"] = summarize(parent_minibatch_records)
         iter_rec["minibatch_task_ids"] = [t["id"] for t in minibatch_tasks]
         children_records: list[dict] = []
+        children_full_records: list[list[dict]] = []  # raw lists for should_promote
         for i, p in enumerate(patches):
             child_prompt = StructuredPrompt(
                 persona=parent_prompt.persona,
@@ -382,6 +423,7 @@ def main() -> int:
             child_label = f"G{iter_k}.C{i}"
             child_stream = out_path.with_name(out_path.stem + f"_iter{iter_k}_child{i}.json")
             child_recs = evaluate_candidate(child_label, child_prompt, minibatch_tasks, args, child_stream)
+            children_full_records.append(child_recs)
             child_score = score_candidate(child_recs)
             children_records.append({
                 "i": i, "patch_failure_pattern": p.failure_pattern[:200],
@@ -394,8 +436,12 @@ def main() -> int:
         best_child_score = tuple(children_records[best_idx]["score"])
         iter_rec["best_child_idx"] = best_idx
         iter_rec["best_child_score"] = list(best_child_score)
-        if best_child_score > tuple(parent_minibatch_score):
-            # Promote
+        # Codex Q1 fix (2026-05-27): promotion guard. Tuple-cmp alone is too
+        # lax when reward~0; require strict reward/success improvement OR
+        # early-stop drop by ≥2 tasks WITH no reward regression.
+        accept, reason = should_promote(parent_minibatch_records, children_full_records[best_idx])
+        iter_rec["promotion_decision_reason"] = reason
+        if accept:
             accepted_children += 1
             best_patch = patches[best_idx]
             parent_prompt = StructuredPrompt(
@@ -407,8 +453,8 @@ def main() -> int:
             parent_prompt.append_patch(scope_guard=best_patch.scope_guard, prompt_diff=best_patch.prompt_diff)
             iter_rec["decision"] = "accept_child"
             iter_rec["accepted_patch_failure_pattern"] = best_patch.failure_pattern[:200]
-            # Re-eval new parent on full N_tasks (this is the expensive part)
-            logger.info("  iter %d: ACCEPT child %d — re-evaluating new parent on full %d tasks", iter_k, best_idx, len(tasks))
+            logger.info("  iter %d: ACCEPT child %d (%s) — re-evaluating new parent on full %d tasks",
+                        iter_k, best_idx, reason, len(tasks))
             full_stream = out_path.with_name(out_path.stem + f"_iter{iter_k}_full.json")
             parent_full_records = evaluate_candidate(f"G{iter_k}.FULL", parent_prompt, tasks, args, full_stream)
             parent_score = score_candidate(parent_full_records)
@@ -416,7 +462,7 @@ def main() -> int:
             iter_rec["new_parent_n_patches"] = len(parent_prompt.behavioral_patches)
         else:
             iter_rec["decision"] = "reject_no_child_better"
-            logger.info("  iter %d: REJECT all children (best_score=%s not > parent_score=%s)", iter_k, best_child_score, parent_minibatch_score)
+            logger.info("  iter %d: REJECT — %s", iter_k, reason)
         iter_history.append(iter_rec)
 
     # --- PHASE F (final eval) ----------------------------------------------
