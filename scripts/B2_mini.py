@@ -1,0 +1,419 @@
+"""B2 mini — vanilla baseline vs FCVR-augmented baseline on the 5-task set.
+
+This is the FIRST real test of the FCVR contribution. Cheap (5 tasks ×
+2 rollouts × 15 steps + 1 reflection round).
+
+Pipeline:
+  Phase A (vanilla):   roll out SEED prompt on 5 tasks → trajectories A
+  Phase B (FCVR):      cluster failed A-trajectories → MMR key frames →
+                       ONE Claude vision call per cluster → patches
+                       (5-field FCVRPatch each)
+  Phase C (enhanced):  build prompt P = SEED || [BEHAVIORAL_PATCHES patches]
+                       and re-roll out on the same 5 tasks → trajectories C
+  Phase D (compare):   per-task A vs C — reward Δ, n_distinct_actions Δ,
+                       click-loop rate Δ. Aggregate verdict.
+
+Out of scope:
+  - Multi-iter GEPA Pareto loop (that's B2 proper, R009-R017).
+  - Multi-seed averaging.
+  - 60-task split.
+
+Pre-task Codex review of the plan is the user's discretion (codex-review-
+every-step protocol). All trajectories carry raw_model_text per step
+(B1_baseline_v3 audit chain).
+
+Per-experiment provenance manifest written alongside result JSON.
+
+Failure handling: fail-fast on task 1 of Phase A (multi_task_fail_fast_
+protocol). If Phase B reflection returns 0 patches, Phase C is SKIPPED
+and the verdict is "FCVR_NO_PATCHES" (not a failure of FCVR, but a no-op
+result with explicit framing).
+
+Usage (on the 5090 server, after preflight passes):
+  python scripts/B2_mini.py \\
+    --tasks configs/osworld_b1_5.json \\
+    --backbone-endpoint http://127.0.0.1:8000/v1 \\
+    --backbone-model /root/models/Qwen3.5-9B \\
+    --cache-dir /root/visual-gepa/osworld_cache \\
+    --max-steps 15 --rng-seed 42 \\
+    --reflection-model claude-opus-4-7 \\
+    --clip-model /root/models/clip-vit-base-patch32 \\
+    --output results/B2_mini_seed42.json \\
+    --manifest results/B2_mini_seed42_manifest.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import logging
+import os
+import sys
+import time
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from visual_gepa.clip_embedder import CLIPImageEmbedder
+from visual_gepa.fcvr import DEFAULT_BUDGET, FCVRBudget, FCVROperator
+from visual_gepa.manifest import Manifest
+from visual_gepa.osworld_adapter import OSWorldAdapter, load_osworld_task_config
+from visual_gepa.reflection import ClaudeReflectionClient, DEFAULT_REFLECTION_MODEL
+from visual_gepa.structured_prompt import StructuredPrompt
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger("B2_mini")
+
+
+SEED_PERSONA = (
+    "You are an autonomous computer-use agent. You see desktop screenshots and "
+    "produce pyautogui-style actions to satisfy the user's task."
+)
+SEED_GLOBAL_RULES = (
+    "1. Read the entire visible screen before acting.\n"
+    "2. Prefer keyboard shortcuts when reliable (Ctrl+S, Alt+Tab, etc.).\n"
+    "3. After every click, verify the expected UI state change in the next "
+    "screenshot before continuing.\n"
+    "4. If a step has no effect, do not retry the same coordinate more than "
+    "twice; replan instead.\n"
+    "5. Emit ONE pyautogui action per turn, fenced in a ```python``` block. "
+    "Use WAIT / DONE / FAIL as bare tokens when appropriate."
+)
+SEED_TASK_SCAFFOLD = (
+    "TASK: {instruction}\nProduce one pyautogui action per step. When complete, "
+    "emit `DONE`. If the task is infeasible, emit `FAIL`."
+)
+
+
+def build_seed_prompt() -> StructuredPrompt:
+    return StructuredPrompt(
+        persona=SEED_PERSONA,
+        global_rules=SEED_GLOBAL_RULES,
+        behavioral_patches=[],
+        task_scaffold=SEED_TASK_SCAFFOLD,
+    )
+
+
+def n_distinct(seq: list[str]) -> int:
+    return len(set(seq))
+
+
+def run_phase(
+    label: str,
+    tasks: list[dict],
+    args,
+    prompt: StructuredPrompt,
+    stream_out_path: Path,
+    halt_on_task1_crash: bool = True,
+) -> list:
+    """Run the agent across all tasks; stream-write partial results."""
+    records = []
+    for i, task_entry in enumerate(tasks):
+        task_id = task_entry.get("id", "<unknown>")
+        cfg_path = task_entry.get("task_config_path") or task_entry.get("id")
+        task_cfg = load_osworld_task_config(cfg_path)
+        logger.info("--- phase %s task %d/%d : %s ---", label, i + 1, len(tasks), task_id)
+        adapter = OSWorldAdapter(
+            task_dict=task_cfg,
+            vllm_endpoint=args.backbone_endpoint,
+            vllm_model=args.backbone_model,
+            provider_name=args.provider,
+            os_type=args.os_type,
+            max_steps=args.max_steps,
+            headless=True,
+            cache_dir=args.cache_dir,
+        )
+        t0 = time.perf_counter()
+        crashed = None
+        traj = None
+        try:
+            traj = adapter.run(prompt)
+        except Exception as e:  # noqa: BLE001
+            logger.exception("phase %s task %s crashed", label, task_id)
+            crashed = f"{type(e).__name__}: {e}"
+
+        rec = {
+            "task_id": task_id,
+            "task_config_path": str(cfg_path),
+            "instruction": task_cfg.get("instruction"),
+            "phase": label,
+            "elapsed_s": round(time.perf_counter() - t0, 3),
+            "crashed_with": crashed,
+        }
+        if traj is not None:
+            score, feedback = adapter.metric(traj)
+            actions = [(s.action or "")[:200] for s in traj.steps]
+            raws = [(s.raw_model_text or "")[:2000] for s in traj.steps]
+            rec.update({
+                "n_steps": traj.n_steps,
+                "final_reward": float(traj.final_reward),
+                "succeeded": traj.succeeded,
+                "score": score,
+                "feedback": feedback,
+                "actions": actions,
+                "raw_model_texts": raws,
+                "n_distinct_actions": n_distinct(actions),
+                "_traj": traj,  # in-memory, dropped before write
+            })
+        else:
+            rec.update({
+                "n_steps": 0, "final_reward": None, "succeeded": False,
+                "score": None, "feedback": "(crashed)", "actions": [],
+                "raw_model_texts": [], "n_distinct_actions": 0, "_traj": None,
+            })
+        records.append(rec)
+
+        # Stream-write WITHOUT _traj (PIL.Image can't JSON-serialize)
+        writable = [{k: v for k, v in r.items() if k != "_traj"} for r in records]
+        stream_out_path.write_text(json.dumps({"phase": label, "tasks": writable}, indent=2, default=str))
+        logger.info(
+            "  phase %s task %s done elapsed=%ss reward=%s distinct_acts=%d",
+            label, task_id, rec["elapsed_s"], rec.get("final_reward"), rec.get("n_distinct_actions"),
+        )
+
+        # Fail-fast on first task crash (multi_task_fail_fast_protocol)
+        if i == 0 and halt_on_task1_crash and crashed:
+            logger.error(
+                "🚨 phase %s task 1 crashed: %s — HALTING per fail-fast protocol", label, crashed,
+            )
+            raise SystemExit(2)
+
+    return records
+
+
+def main() -> int:
+    load_dotenv()
+    ap = argparse.ArgumentParser(description="B2 mini — vanilla vs FCVR-augmented on 5-task set")
+    ap.add_argument("--tasks", required=True)
+    ap.add_argument("--backbone-endpoint", default=os.environ.get("VLLM_BASE_URL", "http://127.0.0.1:8000/v1"))
+    ap.add_argument("--backbone-model", default=os.environ.get("VLLM_MODEL_NAME", "/root/models/Qwen3.5-9B"))
+    ap.add_argument("--provider", default="docker", choices=["docker", "vmware", "aws", "aliyun", "azure", "gcp"])
+    ap.add_argument("--os-type", default="Ubuntu", choices=["Ubuntu", "Windows"])
+    ap.add_argument("--max-steps", type=int, default=15)
+    ap.add_argument("--rng-seed", type=int, default=42)
+    ap.add_argument("--cache-dir", default=None)
+    ap.add_argument("--reflection-model", default=os.environ.get("REFLECTION_MODEL", DEFAULT_REFLECTION_MODEL))
+    ap.add_argument("--clip-model", default="openai/clip-vit-base-patch32")
+    ap.add_argument("--clip-device", default=None)
+    ap.add_argument("--K", type=int, default=DEFAULT_BUDGET.K)
+    ap.add_argument("--J", type=int, default=DEFAULT_BUDGET.J)
+    ap.add_argument("--M", type=int, default=DEFAULT_BUDGET.M)
+    ap.add_argument("--T_patch", type=int, default=DEFAULT_BUDGET.T_patch)
+    ap.add_argument("--output", required=True)
+    ap.add_argument("--manifest", default=None)
+    args = ap.parse_args()
+
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path = Path(args.manifest) if args.manifest else out_path.with_name(out_path.stem + "_manifest.json")
+
+    # Provenance manifest start
+    m = Manifest(
+        experiment_id=f"B2_mini_seed{args.rng_seed}_{datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}",
+        block="B2",
+    )
+    m.start(
+        vllm_cmd=f"endpoint={args.backbone_endpoint} model={args.backbone_model}",
+        model_path=args.backbone_model,
+        qcow2_path=(str(Path(args.cache_dir) / "docker_vm_data" / "Ubuntu.qcow2") if args.cache_dir else ""),
+        config_path=args.tasks,
+        seed=args.rng_seed,
+        compute_model_md5=False,
+        compute_qcow2_md5=False,  # 23 GB, would be slow
+    )
+
+    tasks_cfg = json.loads(Path(args.tasks).read_text())
+    tasks = tasks_cfg.get("tasks", [])
+    logger.info("loaded %d tasks from %s", len(tasks), args.tasks)
+
+    # Components
+    clip = CLIPImageEmbedder(model_name=args.clip_model, device=args.clip_device)
+    reflection = ClaudeReflectionClient(
+        model=args.reflection_model, max_output_tokens=args.T_patch,
+    )
+    budget = FCVRBudget(K=args.K, J=args.J, M=args.M, T_patch=args.T_patch)
+    fcvr = FCVROperator(
+        budget=budget, clip_embedder=clip, reflection_client=reflection, rng_seed=args.rng_seed,
+    )
+
+    started = datetime.datetime.utcnow().isoformat() + "Z"
+    t_total = time.perf_counter()
+
+    # --- PHASE A: vanilla rollout ---
+    logger.info("=== PHASE A: vanilla rollout (SEED prompt) ===")
+    seed_prompt = build_seed_prompt()
+    phaseA_path = out_path.with_name(out_path.stem + "_phaseA.json")
+    A_records = run_phase("A", tasks, args, seed_prompt, phaseA_path)
+
+    # --- PHASE B: FCVR reflection on failed A-trajectories ---
+    failed_trajs = [r["_traj"] for r in A_records if r.get("_traj") and not r["_traj"].succeeded]
+    logger.info("=== PHASE B: FCVR reflection on %d failed trajectories ===", len(failed_trajs))
+    if not failed_trajs:
+        logger.warning("no failed trajectories — Phase B is a no-op")
+        patches, fcvr_record = [], None
+    else:
+        patches, fcvr_record = fcvr.run(failed_trajs, parent_prompt=seed_prompt)
+
+    # --- PHASE C: enhanced rollout ---
+    if not patches:
+        logger.warning("Phase B produced 0 patches — SKIPPING Phase C")
+        C_records: list = []
+        skip_C_reason = "no_patches"
+    else:
+        skip_C_reason = ""
+        enhanced_prompt = StructuredPrompt(
+            persona=seed_prompt.persona,
+            global_rules=seed_prompt.global_rules,
+            behavioral_patches=list(seed_prompt.behavioral_patches),
+            task_scaffold=seed_prompt.task_scaffold,
+        )
+        for p in patches:
+            enhanced_prompt.append_patch(scope_guard=p.scope_guard, prompt_diff=p.prompt_diff)
+        logger.info(
+            "=== PHASE C: enhanced rollout with %d patches (prompt %d tokens approx) ===",
+            len(patches), enhanced_prompt.token_length(),
+        )
+        phaseC_path = out_path.with_name(out_path.stem + "_phaseC.json")
+        C_records = run_phase("C", tasks, args, enhanced_prompt, phaseC_path)
+
+    # --- PHASE D: comparison ---
+    def _summarize(records: list) -> dict:
+        if not records:
+            return {"n_tasks": 0, "n_completed": 0, "n_succeeded": 0, "success_rate": 0.0,
+                    "mean_reward": 0.0, "mean_distinct_actions": 0.0}
+        n_comp = sum(1 for r in records if r["crashed_with"] is None)
+        n_succ = sum(1 for r in records if r.get("succeeded"))
+        rewards = [r["final_reward"] for r in records if r.get("final_reward") is not None]
+        distincts = [r["n_distinct_actions"] for r in records]
+        return {
+            "n_tasks": len(records),
+            "n_completed": n_comp,
+            "n_succeeded": n_succ,
+            "success_rate": n_succ / len(records) if records else 0.0,
+            "mean_reward": sum(rewards) / len(rewards) if rewards else 0.0,
+            "mean_distinct_actions": sum(distincts) / len(distincts) if distincts else 0.0,
+        }
+
+    A_summary = _summarize(A_records)
+    C_summary = _summarize(C_records) if C_records else None
+    per_task_delta = []
+    if C_records:
+        c_by_id = {r["task_id"]: r for r in C_records}
+        for ra in A_records:
+            rc = c_by_id.get(ra["task_id"])
+            per_task_delta.append({
+                "task_id": ra["task_id"],
+                "A_reward": ra.get("final_reward"),
+                "C_reward": rc.get("final_reward") if rc else None,
+                "A_distinct_actions": ra.get("n_distinct_actions"),
+                "C_distinct_actions": rc.get("n_distinct_actions") if rc else None,
+                "reward_delta": (
+                    (rc.get("final_reward") or 0.0) - (ra.get("final_reward") or 0.0)
+                    if rc else None
+                ),
+                "diversity_delta": (
+                    (rc.get("n_distinct_actions") or 0) - (ra.get("n_distinct_actions") or 0)
+                    if rc else None
+                ),
+            })
+
+    elapsed_total = round(time.perf_counter() - t_total, 3)
+    finished = datetime.datetime.utcnow().isoformat() + "Z"
+
+    overall = {
+        "B2_mini": True,
+        "started_at": started,
+        "finished_at": finished,
+        "elapsed_s_total": elapsed_total,
+        "config": {
+            "tasks_config": args.tasks,
+            "backbone_model": args.backbone_model,
+            "backbone_endpoint": args.backbone_endpoint,
+            "reflection_model": args.reflection_model,
+            "clip_model": args.clip_model,
+            "K": args.K, "J": args.J, "M": args.M, "T_patch": args.T_patch,
+            "max_steps": args.max_steps,
+            "rng_seed": args.rng_seed,
+            "n_tasks": len(tasks),
+        },
+        "phaseA": {
+            "summary": A_summary,
+            "tasks": [{k: v for k, v in r.items() if k != "_traj"} for r in A_records],
+        },
+        "phaseB": {
+            "n_failed_input": len(failed_trajs),
+            "n_patches": len(patches),
+            "patches": [p.model_dump() for p in patches],
+            "fcvr_record": ({
+                "n_clusters_used": fcvr_record.n_clusters_used,
+                "cluster_sizes": fcvr_record.cluster_sizes,
+                "total_input_tokens": fcvr_record.total_input_tokens,
+                "total_output_tokens": fcvr_record.total_output_tokens,
+                "total_latency_s": round(fcvr_record.total_latency_s, 3),
+                "schema_violations_total": fcvr_record.schema_violations_total,
+                "elapsed_s": round(fcvr_record.elapsed_s, 3),
+                "reflection_stats": fcvr_record.reflection_stats,
+            } if fcvr_record else None),
+        },
+        "phaseC": ({
+            "summary": C_summary,
+            "tasks": [{k: v for k, v in r.items() if k != "_traj"} for r in C_records],
+            "skipped_reason": skip_C_reason,
+        } if C_records or skip_C_reason else None),
+        "phaseD_delta": per_task_delta,
+    }
+
+    # Cost approximation (Claude Opus 4.7 vision: $5 / Mtok input, $25 / Mtok output)
+    if fcvr_record:
+        in_tok = fcvr_record.total_input_tokens
+        out_tok = fcvr_record.total_output_tokens
+        cost_usd = round((in_tok / 1_000_000) * 5.0 + (out_tok / 1_000_000) * 25.0, 4)
+        overall["approx_claude_cost_usd"] = cost_usd
+    else:
+        overall["approx_claude_cost_usd"] = 0.0
+
+    # Pass criteria (plumbing-only — NOT a science gate)
+    overall["pass_criteria_met"] = {
+        "all_phase_A_tasks_completed": A_summary["n_completed"] == A_summary["n_tasks"],
+        "phase_B_produced_patches": len(patches) > 0,
+        "all_phase_C_tasks_completed": (
+            C_records and C_summary["n_completed"] == C_summary["n_tasks"]
+            if C_summary else False
+        ),
+        "got_phaseD_delta": len(per_task_delta) > 0,
+        "no_iter_crashed": True,
+        "overall": (
+            A_summary["n_completed"] == A_summary["n_tasks"]
+            and len(patches) > 0
+            and C_records is not None
+            and C_summary["n_completed"] == C_summary["n_tasks"]
+        ),
+    }
+
+    out_path.write_text(json.dumps(overall, indent=2, ensure_ascii=False, default=str))
+    logger.info("wrote %s", out_path)
+    logger.info("summary: %s", json.dumps(overall["pass_criteria_met"], indent=2))
+
+    # Finish manifest
+    m.finish(
+        result_path=str(out_path),
+        notes=(
+            f"A={A_summary['n_succeeded']}/{A_summary['n_tasks']} succ "
+            f"C={(C_summary or {}).get('n_succeeded', 0)}/{(C_summary or {}).get('n_tasks', 0)} succ "
+            f"patches={len(patches)} cost=${overall['approx_claude_cost_usd']:.3f}"
+        ),
+    )
+    m.write(manifest_path)
+    logger.info("wrote manifest %s", manifest_path)
+
+    return 0 if overall["pass_criteria_met"]["overall"] else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
