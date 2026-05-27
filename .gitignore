@@ -61,14 +61,21 @@ htmlcov/
 # tracked so the public code repo carries the canonical evidence pointer.
 # Note: must be `results/*` (not `results/`) for the !exception to apply.
 results/*
-!results/B0_smoke.json
+!results/B0_*.json
 !results/B1_*.json
+!results/B1_*.md
 !results/B2_*.json
+!results/B2_*.md
 !results/B3_*.json
+!results/B3_*.md
 !results/B4_*.json
+!results/B4_*.md
 !results/B5_*.json
+!results/B5_*.md
 !results/B6_*.json
+!results/B6_*.md
 !results/B7_*.json
+!results/B7_*.md
 runs/
 wandb/
 *.log

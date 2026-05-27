@@ -1,0 +1,749 @@
+{
+  "audits": [
+    {
+      "task_id": "libreoffice_calc/1954cced-e748-45c4-9c26-9855b97fbc5e",
+      "n_steps": 15,
+      "n_distinct_raws": 11,
+      "n_distinct_code_blocks": 4,
+      "n_distinct_actions": 4,
+      "qwen_loops_strict": 0,
+      "prose_vary_same_code": 11,
+      "qwen_attributable": 11,
+      "parse_collapses": 0,
+      "fresh": 4,
+      "rows": [
+        {
+          "step": 0,
+          "code_hash": "0cf3b36d",
+          "code_block": "pyautogui.hotkey('ctrl', 'm')",
+          "raw_hash": "9f6787da",
+          "raw_head": "The current screenshot shows LibreOffice Calc with a file named \"Invoices.xlsx\" open, but the spread…",
+          "parsed_action": "pyautogui.hotkey('ctrl', 'm')",
+          "category": "FRESH"
+        },
+        {
+          "step": 1,
+          "code_hash": "53f287aa",
+          "code_block": "pyautogui.click(x=214, y=67)",
+          "raw_hash": "bd6753c5",
+          "raw_head": "The previous action to insert a new sheet using `Ctrl+M` did not result in a new sheet appearing. Th…",
+          "parsed_action": "pyautogui.click(x=214, y=67)",
+          "category": "FRESH"
+        },
+        {
+          "step": 2,
+          "code_hash": "d6efa57f",
+          "code_block": "pyautogui.click(x=134, y=140)",
+          "raw_hash": "5db21bf8",
+          "raw_head": "The previous action successfully opened the \"Insert\" menu. The next step is to select the \"Pivot Tab…",
+          "parsed_action": "pyautogui.click(x=134, y=140)",
+          "category": "FRESH"
+        },
+        {
+          "step": 3,
+          "code_hash": "d6efa57f",
+          "code_block": "pyautogui.click(x=134, y=140)",
+          "raw_hash": "532cbd69",
+          "raw_head": "The previous attempt to click on the \"Pivot Table...\" option in the \"Insert\" menu did not result in …",
+          "parsed_action": "pyautogui.click(x=134, y=140)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 4,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "c675fcae",
+          "raw_head": "The previous attempts to insert a Pivot Table via the \"Insert\" menu have not been successful, likely…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "FRESH"
+        },
+        {
+          "step": 5,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "94903d15",
+          "raw_head": "The previous action opened the \"Edit\" menu instead of the \"Insert\" menu. The current screenshot show…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 6,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "02613f30",
+          "raw_head": "The previous attempts to open the \"Insert\" menu have been unsuccessful, likely due to incorrect coor…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 7,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "36bf1c52",
+          "raw_head": "The previous attempts to open the \"Insert\" menu have failed repeatedly, likely due to incorrect coor…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 8,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "bb55c4db",
+          "raw_head": "The previous attempts to click on the \"Insert\" menu have failed repeatedly. The current screenshot s…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 9,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "21e4c7a2",
+          "raw_head": "The previous attempts to click on the \"Insert\" menu have failed repeatedly. The current screenshot s…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 10,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "0b5014c8",
+          "raw_head": "The previous attempts to click on the \"Insert\" menu have failed repeatedly, likely due to incorrect …",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 11,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "21e4c7a2",
+          "raw_head": "The previous attempts to click on the \"Insert\" menu have failed repeatedly. The current screenshot s…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 12,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "bb55c4db",
+          "raw_head": "The previous attempts to click on the \"Insert\" menu have failed repeatedly. The current screenshot s…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 13,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "21e4c7a2",
+          "raw_head": "The previous attempts to click on the \"Insert\" menu have failed repeatedly. The current screenshot s…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        },
+        {
+          "step": 14,
+          "code_hash": "29179e62",
+          "code_block": "pyautogui.click(x=117, y=67)",
+          "raw_hash": "bb55c4db",
+          "raw_head": "The previous attempts to click on the \"Insert\" menu have failed repeatedly. The current screenshot s…",
+          "parsed_action": "pyautogui.click(x=117, y=67)",
+          "category": "PROSE_VARY"
+        }
+      ]
+    },
+    {
+      "task_id": "chrome/a728a36e-8bf1-4bb6-9a03-ef039a5233f0",
+      "n_steps": 15,
+      "n_distinct_raws": 2,
+      "n_distinct_code_blocks": 2,
+      "n_distinct_actions": 2,
+      "qwen_loops_strict": 13,
+      "prose_vary_same_code": 0,
+      "qwen_attributable": 13,
+      "parse_collapses": 0,
+      "fresh": 2,
+      "rows": [
+        {
+          "step": 0,
+          "code_hash": "2ba28b07",
+          "code_block": "pyautogui.click(x=431, y=194)",
+          "raw_hash": "022f3f59",
+          "raw_head": "```python pyautogui.click(x=431, y=194) ```",
+          "parsed_action": "pyautogui.click(x=431, y=194)",
+          "category": "FRESH"
+        },
+        {
+          "step": 1,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "FRESH"
+        },
+        {
+          "step": 2,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 3,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 4,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 5,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 6,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 7,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 8,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 9,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 10,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 11,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 12,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 13,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 14,
+          "code_hash": "af79efac",
+          "code_block": "pyautogui.click(x=242, y=256)",
+          "raw_hash": "f88fae91",
+          "raw_head": "```python pyautogui.click(x=242, y=256) ```",
+          "parsed_action": "pyautogui.click(x=242, y=256)",
+          "category": "QWEN_LOOP"
+        }
+      ]
+    },
+    {
+      "task_id": "libreoffice_writer/8472fece-c7dd-4241-8d65-9b3cd1a0b568",
+      "n_steps": 15,
+      "n_distinct_raws": 1,
+      "n_distinct_code_blocks": 1,
+      "n_distinct_actions": 1,
+      "qwen_loops_strict": 14,
+      "prose_vary_same_code": 0,
+      "qwen_attributable": 14,
+      "parse_collapses": 0,
+      "fresh": 1,
+      "rows": [
+        {
+          "step": 0,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "FRESH"
+        },
+        {
+          "step": 1,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 2,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 3,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 4,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 5,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 6,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 7,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 8,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 9,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 10,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 11,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 12,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 13,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 14,
+          "code_hash": "ffd42a9c",
+          "code_block": "pyautogui.click(x=365, y=450)",
+          "raw_hash": "a00f9b92",
+          "raw_head": "```python pyautogui.click(x=365, y=450) ```",
+          "parsed_action": "pyautogui.click(x=365, y=450)",
+          "category": "QWEN_LOOP"
+        }
+      ]
+    },
+    {
+      "task_id": "vs_code/5e2d93d8-8ad0-4435-b150-1692aacaa994",
+      "n_steps": 15,
+      "n_distinct_raws": 3,
+      "n_distinct_code_blocks": 3,
+      "n_distinct_actions": 3,
+      "qwen_loops_strict": 12,
+      "prose_vary_same_code": 0,
+      "qwen_attributable": 12,
+      "parse_collapses": 0,
+      "fresh": 3,
+      "rows": [
+        {
+          "step": 0,
+          "code_hash": "e8f8abc1",
+          "code_block": "pyautogui.click(x=17, y=56)",
+          "raw_hash": "aa392aea",
+          "raw_head": "```python pyautogui.click(x=17, y=56) ```",
+          "parsed_action": "pyautogui.click(x=17, y=56)",
+          "category": "FRESH"
+        },
+        {
+          "step": 1,
+          "code_hash": "0319c227",
+          "code_block": "pyautogui.click(x=17, y=183)",
+          "raw_hash": "cd0f7594",
+          "raw_head": "```python pyautogui.click(x=17, y=183) ```",
+          "parsed_action": "pyautogui.click(x=17, y=183)",
+          "category": "FRESH"
+        },
+        {
+          "step": 2,
+          "code_hash": "bf934971",
+          "code_block": "pyautogui.click(x=45, y=70)",
+          "raw_hash": "f2370e4e",
+          "raw_head": "```python pyautogui.click(x=45, y=70) ```",
+          "parsed_action": "pyautogui.click(x=45, y=70)",
+          "category": "FRESH"
+        },
+        {
+          "step": 3,
+          "code_hash": "e8f8abc1",
+          "code_block": "pyautogui.click(x=17, y=56)",
+          "raw_hash": "aa392aea",
+          "raw_head": "```python pyautogui.click(x=17, y=56) ```",
+          "parsed_action": "pyautogui.click(x=17, y=56)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 4,
+          "code_hash": "e8f8abc1",
+          "code_block": "pyautogui.click(x=17, y=56)",
+          "raw_hash": "aa392aea",
+          "raw_head": "```python pyautogui.click(x=17, y=56) ```",
+          "parsed_action": "pyautogui.click(x=17, y=56)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 5,
+          "code_hash": "0319c227",
+          "code_block": "pyautogui.click(x=17, y=183)",
+          "raw_hash": "cd0f7594",
+          "raw_head": "```python pyautogui.click(x=17, y=183) ```",
+          "parsed_action": "pyautogui.click(x=17, y=183)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 6,
+          "code_hash": "e8f8abc1",
+          "code_block": "pyautogui.click(x=17, y=56)",
+          "raw_hash": "aa392aea",
+          "raw_head": "```python pyautogui.click(x=17, y=56) ```",
+          "parsed_action": "pyautogui.click(x=17, y=56)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 7,
+          "code_hash": "0319c227",
+          "code_block": "pyautogui.click(x=17, y=183)",
+          "raw_hash": "cd0f7594",
+          "raw_head": "```python pyautogui.click(x=17, y=183) ```",
+          "parsed_action": "pyautogui.click(x=17, y=183)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 8,
+          "code_hash": "bf934971",
+          "code_block": "pyautogui.click(x=45, y=70)",
+          "raw_hash": "f2370e4e",
+          "raw_head": "```python pyautogui.click(x=45, y=70) ```",
+          "parsed_action": "pyautogui.click(x=45, y=70)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 9,
+          "code_hash": "0319c227",
+          "code_block": "pyautogui.click(x=17, y=183)",
+          "raw_hash": "cd0f7594",
+          "raw_head": "```python pyautogui.click(x=17, y=183) ```",
+          "parsed_action": "pyautogui.click(x=17, y=183)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 10,
+          "code_hash": "e8f8abc1",
+          "code_block": "pyautogui.click(x=17, y=56)",
+          "raw_hash": "aa392aea",
+          "raw_head": "```python pyautogui.click(x=17, y=56) ```",
+          "parsed_action": "pyautogui.click(x=17, y=56)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 11,
+          "code_hash": "0319c227",
+          "code_block": "pyautogui.click(x=17, y=183)",
+          "raw_hash": "cd0f7594",
+          "raw_head": "```python pyautogui.click(x=17, y=183) ```",
+          "parsed_action": "pyautogui.click(x=17, y=183)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 12,
+          "code_hash": "e8f8abc1",
+          "code_block": "pyautogui.click(x=17, y=56)",
+          "raw_hash": "aa392aea",
+          "raw_head": "```python pyautogui.click(x=17, y=56) ```",
+          "parsed_action": "pyautogui.click(x=17, y=56)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 13,
+          "code_hash": "0319c227",
+          "code_block": "pyautogui.click(x=17, y=183)",
+          "raw_hash": "cd0f7594",
+          "raw_head": "```python pyautogui.click(x=17, y=183) ```",
+          "parsed_action": "pyautogui.click(x=17, y=183)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 14,
+          "code_hash": "bf934971",
+          "code_block": "pyautogui.click(x=45, y=70)",
+          "raw_hash": "f2370e4e",
+          "raw_head": "```python pyautogui.click(x=45, y=70) ```",
+          "parsed_action": "pyautogui.click(x=45, y=70)",
+          "category": "QWEN_LOOP"
+        }
+      ]
+    },
+    {
+      "task_id": "gimp/7b7617bd-57cc-468e-9c91-40c4ec2bcb3d",
+      "n_steps": 15,
+      "n_distinct_raws": 1,
+      "n_distinct_code_blocks": 1,
+      "n_distinct_actions": 1,
+      "qwen_loops_strict": 14,
+      "prose_vary_same_code": 0,
+      "qwen_attributable": 14,
+      "parse_collapses": 0,
+      "fresh": 1,
+      "rows": [
+        {
+          "step": 0,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "FRESH"
+        },
+        {
+          "step": 1,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 2,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 3,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 4,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 5,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 6,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 7,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 8,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 9,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 10,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 11,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 12,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 13,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        },
+        {
+          "step": 14,
+          "code_hash": "5454bae1",
+          "code_block": "pyautogui.click(x=1789, y=965)",
+          "raw_hash": "ed3ad028",
+          "raw_head": "```python pyautogui.click(x=1789, y=965) ```",
+          "parsed_action": "pyautogui.click(x=1789, y=965)",
+          "category": "QWEN_LOOP"
+        }
+      ]
+    }
+  ]
+}
