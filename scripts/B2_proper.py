@@ -197,6 +197,10 @@ def evaluate_candidate(
                 "n_distinct_actions": n_distinct(actions),
                 "early_stop_reason": getattr(traj, "early_stop_reason", None),
                 "reward_source": getattr(traj, "reward_source", "unset"),
+                # Backbone token usage (codex stop-time review 2026-05-28 fix)
+                "backbone_prompt_tokens": getattr(traj, "backbone_prompt_tokens", 0),
+                "backbone_completion_tokens": getattr(traj, "backbone_completion_tokens", 0),
+                "backbone_reasoning_tokens": getattr(traj, "backbone_reasoning_tokens", 0),
                 "_traj": traj,
             })
         else:
@@ -205,6 +209,9 @@ def evaluate_candidate(
                 "score": None, "feedback": "(crashed)", "actions": [],
                 "raw_model_texts": [], "n_distinct_actions": 0,
                 "early_stop_reason": None, "reward_source": "crashed_before_eval",
+                "backbone_prompt_tokens": 0,
+                "backbone_completion_tokens": 0,
+                "backbone_reasoning_tokens": 0,
                 "_traj": None,
             })
         records.append(rec)
@@ -368,6 +375,17 @@ def main() -> int:
     ap.add_argument("--min-failures-for-fcvr", type=int, default=3)
     ap.add_argument("--accept-epsilon", type=float, default=0.0,
                     help="child must beat parent on minibatch by > epsilon (default 0.0 = strict gt)")
+    # Backbone cost rates (codex stop-time review 2026-05-28 fix). Estimate
+    # only — anyaigc doesn't publish per-model rates, so we use OpenAI list
+    # prices as a reference. Override if you have better numbers.
+    ap.add_argument("--backbone-input-cost-per-mtok", type=float, default=1.25,
+                    help="USD per 1M backbone INPUT tokens (gpt-5.5 OpenAI list est. 1.25)")
+    ap.add_argument("--backbone-output-cost-per-mtok", type=float, default=10.0,
+                    help="USD per 1M backbone OUTPUT+reasoning tokens (gpt-5.5 OpenAI list est. 10)")
+    ap.add_argument("--reflection-input-cost-per-mtok", type=float, default=5.0,
+                    help="USD per 1M reflection INPUT tokens (claude-opus-4-7 list 5)")
+    ap.add_argument("--reflection-output-cost-per-mtok", type=float, default=25.0,
+                    help="USD per 1M reflection OUTPUT tokens (claude-opus-4-7 list 25)")
     ap.add_argument("--output", required=True)
     ap.add_argument("--manifest", default=None)
     args = ap.parse_args()
@@ -419,11 +437,17 @@ def main() -> int:
     started = datetime.datetime.utcnow().isoformat() + "Z"
     t_total = time.perf_counter()
 
+    # Cost-accounting accumulator (codex stop-time review 2026-05-28 fix).
+    # Every evaluate_candidate() output gets appended; backbone tokens
+    # summed at the end.
+    all_eval_records_for_cost: list[list[dict]] = []
+
     # --- PHASE A (vanilla baseline) -----------------------------------------
     logger.info("=== PHASE A: vanilla baseline on %d tasks ===", len(tasks))
     parent_prompt = build_seed_prompt()
     phaseA_path = out_path.with_name(out_path.stem + "_phaseA.json")
     A_records = evaluate_candidate("A", parent_prompt, tasks, args, phaseA_path, halt_on_task1_crash=True)
+    all_eval_records_for_cost.append(A_records)
     parent_full_records = A_records
     parent_score = score_candidate(parent_full_records)
     logger.info(
@@ -528,6 +552,7 @@ def main() -> int:
         parent_minibatch_records = evaluate_candidate(
             f"G{iter_k}.P", parent_prompt, minibatch_tasks, args, parent_stream,
         )
+        all_eval_records_for_cost.append(parent_minibatch_records)
         parent_minibatch_score = score_candidate(parent_minibatch_records)
         iter_rec["parent_minibatch_score"] = list(parent_minibatch_score)
         iter_rec["parent_minibatch_summary"] = summarize(parent_minibatch_records)
@@ -545,6 +570,7 @@ def main() -> int:
             child_label = f"G{iter_k}.C{i}"
             child_stream = out_path.with_name(out_path.stem + f"_iter{iter_k}_child{i}.json")
             child_recs = evaluate_candidate(child_label, child_prompt, minibatch_tasks, args, child_stream)
+            all_eval_records_for_cost.append(child_recs)
             children_full_records.append(child_recs)
             child_score = score_candidate(child_recs)
             # Codex Q4: best_child_loop_escape — for each minibatch task where
@@ -585,6 +611,7 @@ def main() -> int:
                         iter_k, best_idx, reason, len(tasks))
             full_stream = out_path.with_name(out_path.stem + f"_iter{iter_k}_full.json")
             parent_full_records = evaluate_candidate(f"G{iter_k}.FULL", parent_prompt, tasks, args, full_stream)
+            all_eval_records_for_cost.append(parent_full_records)
             parent_score = score_candidate(parent_full_records)
             iter_rec["new_parent_full_score"] = list(parent_score)
             iter_rec["new_parent_n_patches"] = len(parent_prompt.behavioral_patches)
@@ -621,7 +648,32 @@ def main() -> int:
 
     elapsed_total = round(time.perf_counter() - t_total, 3)
     finished = datetime.datetime.utcnow().isoformat() + "Z"
-    cost_usd = (total_fcvr_input_tokens / 1_000_000) * 5.0 + (total_fcvr_output_tokens / 1_000_000) * 25.0
+
+    # --- Cost accounting (codex stop-time review 2026-05-28 fix) -----------
+    # Sum backbone tokens across EVERY evaluate_candidate() call collected
+    # in `all_eval_records_for_cost` (Phase A + per-iter parent minibatch +
+    # per-iter children + per-iter full re-eval on accept + Phase F implicit
+    # via parent_full_records aliasing).
+    bb_in = 0
+    bb_out = 0
+    bb_reason = 0
+    for recs in all_eval_records_for_cost:
+        for r in recs or []:
+            bb_in += r.get("backbone_prompt_tokens", 0) or 0
+            bb_out += r.get("backbone_completion_tokens", 0) or 0
+            bb_reason += r.get("backbone_reasoning_tokens", 0) or 0
+
+    # Backbone cost: input + (output + reasoning) at the configured rates.
+    # Reasoning tokens are typically billed at output rate.
+    backbone_cost_usd = (
+        bb_in * args.backbone_input_cost_per_mtok / 1_000_000
+        + (bb_out + bb_reason) * args.backbone_output_cost_per_mtok / 1_000_000
+    )
+    reflection_cost_usd = (
+        total_fcvr_input_tokens * args.reflection_input_cost_per_mtok / 1_000_000
+        + total_fcvr_output_tokens * args.reflection_output_cost_per_mtok / 1_000_000
+    )
+    cost_usd = backbone_cost_usd + reflection_cost_usd
 
     overall = {
         "B2_proper": True,
@@ -691,7 +743,24 @@ def main() -> int:
             "gepa_iters_attempted": args.max_iters,
             "rejected_cluster_member_sets": [sorted(s) for s in rejected_member_sets],
         },
-        "approx_claude_cost_usd": round(cost_usd, 4),
+        "approx_claude_cost_usd": round(reflection_cost_usd, 4),
+        "cost_breakdown_usd": {
+            "backbone_input_tokens": bb_in,
+            "backbone_output_tokens": bb_out,
+            "backbone_reasoning_tokens": bb_reason,
+            "backbone_cost_usd": round(backbone_cost_usd, 4),
+            "reflection_input_tokens": total_fcvr_input_tokens,
+            "reflection_output_tokens": total_fcvr_output_tokens,
+            "reflection_cost_usd": round(reflection_cost_usd, 4),
+            "total_cost_usd": round(cost_usd, 4),
+            "rates_usd_per_mtok": {
+                "backbone_input": args.backbone_input_cost_per_mtok,
+                "backbone_output": args.backbone_output_cost_per_mtok,
+                "reflection_input": args.reflection_input_cost_per_mtok,
+                "reflection_output": args.reflection_output_cost_per_mtok,
+            },
+            "n_eval_record_lists_accumulated": len(all_eval_records_for_cost),
+        },
         "pass_criteria_met": {
             "phase_A_ran": A_summary["n_completed"] > 0,
             "phase_F_ran": F_summary["n_completed"] > 0,
@@ -708,7 +777,8 @@ def main() -> int:
         notes=(
             f"seed={args.rng_seed} A={A_summary['n_succeeded']}/{A_summary['n_tasks']} "
             f"F={F_summary['n_succeeded']}/{F_summary['n_tasks']} "
-            f"accepted={accepted_children}/{args.max_iters} cost=${cost_usd:.3f}"
+            f"accepted={accepted_children}/{args.max_iters} "
+            f"cost=${cost_usd:.3f} (bb=${backbone_cost_usd:.3f} refl=${reflection_cost_usd:.3f})"
         ),
     )
     m.write(manifest_path)

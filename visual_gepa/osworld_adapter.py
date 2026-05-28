@@ -132,6 +132,16 @@ class MultimodalTrajectory:
     # Codex post-run audit (2026-05-27) flagged: "verify rewards come from
     # OSWorld evaluator not inferred logs." This field is the assertion target.
     reward_source: str = "unset"
+    # Backbone token usage for this rollout. Populated by OSWorldAdapter.run()
+    # from the per-rollout agent. Only meaningful for backbone_kind="openai_api"
+    # (vLLM path leaves these at 0 since self-hosted has no per-token cost).
+    # Codex stop-time review (2026-05-28) flagged: without these, the result
+    # JSON's cost accounting silently drops the dominant cost component when
+    # the backbone is an API model.
+    backbone_prompt_tokens: int = 0
+    backbone_completion_tokens: int = 0
+    backbone_reasoning_tokens: int = 0
+    backbone_kind: str = ""  # "vllm" or "openai_api"; informational
 
     @property
     def n_steps(self) -> int:
@@ -773,6 +783,14 @@ class OSWorldAdapter:
             traj.final_reward = final_reward
             if not traj.steps:
                 traj.reward_source = "no_steps"
+            # Copy backbone token usage from agent (only OpenAIAgent reports it).
+            # Codex stop-time review (2026-05-28) fix: ensure backbone cost is
+            # auditable end-to-end.
+            traj.backbone_kind = self.backbone_kind
+            if hasattr(agent, "total_prompt_tokens"):
+                traj.backbone_prompt_tokens = getattr(agent, "total_prompt_tokens", 0)
+                traj.backbone_completion_tokens = getattr(agent, "total_completion_tokens", 0)
+                traj.backbone_reasoning_tokens = getattr(agent, "total_reasoning_tokens", 0)
             return traj
         finally:
             try:
