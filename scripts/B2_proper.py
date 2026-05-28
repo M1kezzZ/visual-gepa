@@ -161,10 +161,16 @@ def _aggregate_task_record(task_id, cfg_path, instruction, label, samples: list)
     _traj = a FAILED sample's traj when present (for FCVR), else the best.
     Backbone tokens SUMMED across samples (cost accounting must count all).
     """
-    rewards = [t.final_reward for (t, c, _) in samples if t is not None and c is None]
-    n_crash = sum(1 for (t, c, _) in samples if t is None or c is not None)
+    # codex stop-time fix (2026-05-29): crashed samples must NOT be dropped from
+    # the mean — a crash-prone prompt (e.g. a longer child with more patches that
+    # hits context/malformed-response errors more often) could otherwise look
+    # artificially good by having its crashes ignored, defeating the whole
+    # point of variance-controlled promotion. A crashed sample = the agent
+    # failed to complete the task → counts as reward 0.0.
+    valid_rewards = [t.final_reward for (t, c, _) in samples if t is not None and c is None]
+    n_crash = len(samples) - len(valid_rewards)
     crashed = None
-    if not rewards:  # every sample crashed
+    if not valid_rewards:  # EVERY sample crashed → no signal at all (not "reward 0")
         first_crash = next((c for (t, c, _) in samples if c), "all_samples_crashed")
         return {
             "task_id": task_id, "task_config_path": str(cfg_path),
@@ -172,16 +178,21 @@ def _aggregate_task_record(task_id, cfg_path, instruction, label, samples: list)
             "elapsed_s": round(max((e for (_, _, e) in samples), default=0.0), 3),
             "crashed_with": first_crash,
             "n_steps": 0, "final_reward": None, "succeeded": False,
-            "score": None, "feedback": "(crashed)", "actions": [],
+            "score": None, "feedback": "(all samples crashed)", "actions": [],
             "raw_model_texts": [], "n_distinct_actions": 0,
             "early_stop_reason": None, "reward_source": "crashed_before_eval",
-            "n_samples": len(samples), "sample_rewards": [],
-            "success_fraction": 0.0,
+            "n_samples": len(samples), "n_samples_crashed": n_crash,
+            "sample_rewards": [], "success_fraction": 0.0,
             "backbone_prompt_tokens": 0, "backbone_completion_tokens": 0,
             "backbone_reasoning_tokens": 0, "_traj": None,
         }
-    mean_reward = sum(rewards) / len(rewards)
-    success_fraction = sum(1 for r in rewards if r > 0) / len(rewards)
+    # Partial crash: crashed samples count as reward 0.0 across ALL N samples.
+    per_sample_rewards = [
+        (t.final_reward if (t is not None and c is None) else 0.0)
+        for (t, c, _) in samples
+    ]
+    mean_reward = sum(per_sample_rewards) / len(per_sample_rewards)
+    success_fraction = sum(1 for r in per_sample_rewards if r > 0) / len(per_sample_rewards)
     succeeded = success_fraction >= 0.5
     # representative traj for FCVR: prefer a failed sample (reward==0)
     valid = [(t, e) for (t, c, e) in samples if t is not None and c is None]
@@ -209,10 +220,12 @@ def _aggregate_task_record(task_id, cfg_path, instruction, label, samples: list)
         "succeeded": succeeded,
         "n_samples": len(samples),
         "n_samples_crashed": n_crash,
-        "sample_rewards": [float(r) for r in rewards],
+        "sample_rewards": [float(r) for r in valid_rewards],
+        "per_sample_rewards_with_crash_as_0": [float(r) for r in per_sample_rewards],
         "success_fraction": success_fraction,
         "score": float(mean_reward),
-        "feedback": f"mean_reward={mean_reward:.3f} over {len(rewards)} samples",
+        "feedback": f"mean_reward={mean_reward:.3f} over {len(samples)} samples "
+                    f"({n_crash} crashed→0)",
         "actions": actions, "raw_model_texts": raws,
         "n_distinct_actions": n_distinct(actions),
         "early_stop_reason": getattr(rep_traj, "early_stop_reason", None),
