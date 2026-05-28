@@ -407,6 +407,32 @@ def main() -> int:
     # --- SwanLab init (codex stop-time hardening 2026-05-29) ----------------
     # Wrap import + init in try/except so an absent swanlab pkg or bad key
     # doesn't kill the experiment. We log via global swanlab.log() throughout.
+    #
+    # SECURITY: vars(args) contains literal API keys (--openai-api-key parses
+    # the secret string into args.openai_api_key). swanlab uploads config to
+    # cloud, so the raw dict would leak credentials. Redact before passing.
+    # Codex stop-time review (2026-05-29) caught this leak. The redaction set
+    # covers the args we KNOW are sensitive; future args matching the
+    # SENSITIVE_KEY_PATTERNS regex (`*_key`, `*_token`, `*_secret`, `*password*`)
+    # are also redacted defensively.
+    SENSITIVE_ARG_NAMES = {"openai_api_key", "anthropic_api_key", "swanlab_api_key"}
+    SENSITIVE_KEY_PATTERNS = re.compile(r"(_key|_token|_secret|password)$", re.IGNORECASE)
+
+    def _redact_config(args_dict: dict) -> dict:
+        out = {}
+        for k, v in args_dict.items():
+            if k in SENSITIVE_ARG_NAMES or SENSITIVE_KEY_PATTERNS.search(k):
+                # Replace with a placeholder that records (a) the field exists,
+                # (b) whether it had a value, (c) a fingerprint hint (length).
+                if v:
+                    s = str(v)
+                    out[k] = f"<redacted-{len(s)}c>"
+                else:
+                    out[k] = None
+            else:
+                out[k] = v
+        return out
+
     swanlab_active = False
     if args.swanlab_mode != "disabled":
         try:
@@ -416,11 +442,12 @@ def main() -> int:
             if args.swanlab_mode == "cloud" and not sl_key:
                 logger.warning("SWANLAB_API_KEY not set; falling back to swanlab-mode=offline")
                 args.swanlab_mode = "offline"
+            safe_config = _redact_config(vars(args))
             swanlab.init(
                 project=args.swanlab_project,
                 experiment_name=exp_name,
                 mode=args.swanlab_mode,
-                config=vars(args),
+                config=safe_config,
                 description=(
                     f"B2 proper {exp_name} | backbone={args.backbone_kind}:"
                     f"{args.openai_model if args.backbone_kind == 'openai_api' else args.backbone_model} | "
@@ -429,7 +456,9 @@ def main() -> int:
                 ),
             )
             swanlab_active = True
-            logger.info("swanlab initialized: project=%s mode=%s exp=%s", args.swanlab_project, args.swanlab_mode, exp_name)
+            logger.info("swanlab initialized: project=%s mode=%s exp=%s (config redacted: %s)",
+                        args.swanlab_project, args.swanlab_mode, exp_name,
+                        sorted(k for k, v in safe_config.items() if isinstance(v, str) and v.startswith("<redacted")))
         except ImportError:
             logger.warning("swanlab package not installed — skipping experiment tracking")
         except Exception as e:  # noqa: BLE001
