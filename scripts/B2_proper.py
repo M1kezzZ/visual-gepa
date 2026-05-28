@@ -357,17 +357,30 @@ def evaluate_candidate(
 def summarize(records: list[dict]) -> dict:
     if not records:
         return {"n_tasks": 0, "n_completed": 0, "n_succeeded": 0, "success_rate": 0.0,
-                "mean_reward": 0.0, "mean_distinct_actions": 0.0, "early_stop_rate": 0.0}
+                "mean_reward": 0.0, "mean_reward_completed_only": 0.0,
+                "mean_distinct_actions": 0.0, "early_stop_rate": 0.0}
     n_comp = sum(1 for r in records if r["crashed_with"] is None)
     n_succ = sum(1 for r in records if r.get("succeeded"))
-    rewards = [r["final_reward"] for r in records if r.get("final_reward") is not None]
     distincts = [r["n_distinct_actions"] for r in records]
+    # codex stop-time fix (2026-05-29): mean_reward counts a no-signal task
+    # (all samples crashed / config-load-failed → final_reward None) as 0,
+    # with denominator = ALL tasks. Excluding such tasks let a crash-prone
+    # child inflate its mean by dropping the tasks it broke. This is the SAME
+    # bias as the within-task partial-crash case, at the across-task level.
+    # Conservative by design (penalizes crashes → can only false-REJECT, never
+    # false-PROMOTE — the safe direction for the noise-control goal).
+    reward_vals = [(r["final_reward"] if r.get("final_reward") is not None else 0.0)
+                   for r in records]
+    # Diagnostic: mean over only the tasks that produced a signal (old behavior).
+    completed_rewards = [r["final_reward"] for r in records if r.get("final_reward") is not None]
     return {
         "n_tasks": len(records),
         "n_completed": n_comp,
         "n_succeeded": n_succ,
         "success_rate": n_succ / len(records),
-        "mean_reward": sum(rewards) / len(rewards) if rewards else 0.0,
+        "mean_reward": sum(reward_vals) / len(reward_vals),
+        "mean_reward_completed_only": (
+            sum(completed_rewards) / len(completed_rewards) if completed_rewards else 0.0),
         "mean_distinct_actions": sum(distincts) / len(distincts) if distincts else 0.0,
         "early_stop_rate": early_stop_fraction(records),
     }
