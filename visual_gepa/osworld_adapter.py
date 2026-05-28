@@ -31,6 +31,7 @@ import logging
 import re
 import subprocess
 import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -388,25 +389,62 @@ class OpenAIAgent:
             "model": self.model,
             "messages": messages,
             "max_tokens": self.max_tokens,
+            "temperature": self.temperature,
+            "top_p": self.top_p,
         }
-        # Some reasoning models (gpt-5-pro, o-series) reject temperature/top_p.
-        # Use a try/except cascade so the adapter degrades gracefully if so.
-        try:
-            kwargs["temperature"] = self.temperature
-            kwargs["top_p"] = self.top_p
-            resp = self._client.chat.completions.create(**kwargs)
-        except Exception as e:  # noqa: BLE001
-            if "temperature" in str(e).lower() or "top_p" in str(e).lower():
-                kwargs.pop("temperature", None)
-                kwargs.pop("top_p", None)
-                logger.warning("backbone rejected temp/top_p, retrying without: %s", e)
-                resp = self._client.chat.completions.create(**kwargs)
-            else:
-                raise
 
-        text = resp.choices[0].message.content or ""
-        # Track token usage for cost accounting.
-        usage = getattr(resp, "usage", None)
+        # Robust API call (2026-05-29 fix). The B2 smoke lost 2 rollouts to
+        # `AttributeError: 'str' object has no attribute 'choices'` — anyaigc
+        # occasionally returns a raw string / malformed body instead of a
+        # ChatCompletion, and transient SSLError / network blips also occur.
+        # Retry up to `max_api_retries` with backoff, handling:
+        #   (a) temperature/top_p rejection (reasoning models) → drop + retry
+        #   (b) malformed response (str / no .choices / empty content) → retry
+        #   (c) transient exceptions (SSL, timeout, 5xx) → backoff + retry
+        # On final failure, return "WAIT" so the rollout continues (one wasted
+        # step) instead of crashing the entire task.
+        max_api_retries = 4
+        text = None
+        resp = None
+        for attempt in range(max_api_retries):
+            try:
+                resp = self._client.chat.completions.create(**kwargs)
+            except Exception as e:  # noqa: BLE001
+                emsg = str(e).lower()
+                if ("temperature" in emsg or "top_p" in emsg) and (
+                    "temperature" in kwargs or "top_p" in kwargs
+                ):
+                    kwargs.pop("temperature", None)
+                    kwargs.pop("top_p", None)
+                    logger.warning("backbone rejected temp/top_p, retrying without")
+                    continue  # immediate retry, doesn't count as backoff
+                logger.warning("backbone API error (attempt %d/%d): %s",
+                               attempt + 1, max_api_retries, str(e)[:160])
+                time.sleep(min(2 ** attempt, 10))
+                continue
+            # Validate the response shape — anyaigc sometimes returns a str.
+            choices = getattr(resp, "choices", None)
+            if not choices:
+                logger.warning("backbone returned malformed response (type=%s, no choices) "
+                               "attempt %d/%d", type(resp).__name__, attempt + 1, max_api_retries)
+                time.sleep(min(2 ** attempt, 10))
+                continue
+            content = getattr(getattr(choices[0], "message", None), "content", None)
+            if content is None:
+                logger.warning("backbone returned choices but no message.content attempt %d/%d",
+                               attempt + 1, max_api_retries)
+                time.sleep(min(2 ** attempt, 10))
+                continue
+            text = content
+            break
+
+        if text is None:
+            logger.error("backbone API failed after %d attempts — emitting WAIT for this step",
+                         max_api_retries)
+            text = "WAIT"
+
+        # Track token usage for cost accounting (only if we got a valid resp).
+        usage = getattr(resp, "usage", None) if resp is not None else None
         if usage:
             self.total_prompt_tokens += getattr(usage, "prompt_tokens", 0) or 0
             self.total_completion_tokens += getattr(usage, "completion_tokens", 0) or 0
