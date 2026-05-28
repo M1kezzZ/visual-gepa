@@ -53,7 +53,11 @@ _OSWORLD_DOCKER_IMAGE = "happysixd/osworld-docker"
 
 
 def _docker_kill_osworld_containers(reason: str) -> int:
-    """Kill all running OSWorld containers. Returns count killed."""
+    """Kill ALL running OSWorld containers. ⚠️ ONLY safe in SERIAL mode — in
+    parallel runs this would kill sibling rollouts. Kept as a last-resort
+    fallback when a specific container handle isn't available. Prefer the
+    per-container `kill_fn` passed to `_with_watchdog`.
+    """
     killed = 0
     try:
         result = subprocess.run(
@@ -67,31 +71,32 @@ def _docker_kill_osworld_containers(reason: str) -> int:
             subprocess.run(["docker", "kill", cid], capture_output=True, timeout=10)
             killed += 1
         if killed:
-            logger.warning(
-                "watchdog: killed %d OSWorld container(s) — reason=%s",
-                killed, reason,
-            )
+            logger.warning("watchdog: killed %d OSWorld container(s) — reason=%s", killed, reason)
     except Exception as e:  # noqa: BLE001
         logger.error("watchdog kill failed: %s", e)
     return killed
 
 
-def _with_watchdog(timeout_s: int, label: str, callable_, *args, **kwargs):
-    """Run callable_ under a wall-clock watchdog. On timeout, docker-kill
-    OSWorld containers so the in-flight HTTP call raises and the python
-    code can recover.
+def _with_watchdog(timeout_s: int, label: str, kill_fn, callable_, *args, **kwargs):
+    """Run callable_ under a wall-clock watchdog. On timeout, invoke `kill_fn`
+    (which should kill ONLY this rollout's own container) so the in-flight
+    HTTP call raises and the python code can recover.
 
-    Returns the callable's result. If the watchdog fires, the callable
-    still runs to completion — it's just that the underlying HTTP/IPC
-    will have been forcibly broken, so it should fail fast after.
-    Caller handles the resulting exception.
+    `kill_fn` takes one arg (a reason string). Passing a per-container kill
+    is what makes parallel rollouts safe — killing by ancestor would take
+    down sibling containers. If kill_fn is None, falls back to the
+    (serial-only) kill-all-by-ancestor.
+
+    Returns the callable's result. If the watchdog fires, the underlying
+    HTTP/IPC is forcibly broken so the callable fails fast after; caller
+    handles the resulting exception.
     """
     if timeout_s <= 0:
         return callable_(*args, **kwargs)
-    timer = threading.Timer(
-        timeout_s,
-        lambda: _docker_kill_osworld_containers(f"{label}_timeout_{timeout_s}s"),
-    )
+    reason = f"{label}_timeout_{timeout_s}s"
+    fire = (lambda: kill_fn(reason)) if kill_fn is not None else (
+        lambda: _docker_kill_osworld_containers(reason))
+    timer = threading.Timer(timeout_s, fire)
     timer.daemon = True
     timer.start()
     try:
@@ -672,6 +677,27 @@ class OSWorldAdapter:
         )
 
     # --- public API --------------------------------------------------------
+    def _kill_my_container(self, reason: str) -> None:
+        """Kill ONLY this adapter's own OSWorld docker container (parallel-safe).
+
+        OSWorld's DockerProvider stores the container at env.provider.container.
+        Killing it (vs kill-all-by-ancestor) leaves sibling parallel rollouts
+        untouched. Falls back to no-op if the handle isn't available.
+        """
+        try:
+            provider = getattr(self._env, "provider", None)
+            container = getattr(provider, "container", None)
+            if container is not None:
+                cid = getattr(container, "short_id", "?")
+                container.kill()
+                logger.warning("watchdog: killed OWN container %s — %s", cid, reason)
+            else:
+                # No handle (e.g. non-docker provider) — fall back to ancestor kill.
+                logger.warning("watchdog: no container handle, falling back to kill-all — %s", reason)
+                _docker_kill_osworld_containers(reason)
+        except Exception as e:  # noqa: BLE001
+            logger.error("watchdog targeted kill failed: %s", e)
+
     def run(self, prompt: StructuredPrompt) -> MultimodalTrajectory:
         """Roll out one OSWorld episode under the given structured prompt.
 
@@ -729,7 +755,7 @@ class OSWorldAdapter:
         try:
             try:
                 obs = _with_watchdog(
-                    self.reset_watchdog_seconds, "env_reset",
+                    self.reset_watchdog_seconds, "env_reset", self._kill_my_container,
                     env.reset, task_config=self.task_config,
                 )
             except Exception as e:  # noqa: BLE001
@@ -750,7 +776,7 @@ class OSWorldAdapter:
 
                 try:
                     obs, reward, done, info = _with_watchdog(
-                        self.step_watchdog_seconds, "env_step",
+                        self.step_watchdog_seconds, "env_step", self._kill_my_container,
                         env.step, action,
                     )
                 except Exception as e:  # noqa: BLE001
@@ -810,7 +836,7 @@ class OSWorldAdapter:
             # early-stop). Reward provenance recorded for the post-run audit.
             try:
                 final_reward = float(_with_watchdog(
-                    self.evaluate_watchdog_seconds, "env_evaluate",
+                    self.evaluate_watchdog_seconds, "env_evaluate", self._kill_my_container,
                     env.evaluate,
                 ))
                 traj.reward_source = "env_evaluate"

@@ -114,6 +114,116 @@ def early_stop_fraction(records: list) -> float:
     return n / len(records)
 
 
+def _one_rollout(task_cfg: dict, args, prompt: StructuredPrompt, temperature: float):
+    """Run ONE OSWorldAdapter rollout. Thread-safe (each call gets its own
+    adapter + its own auto-port-allocated docker container). Returns
+    (traj_or_None, crashed_str_or_None, elapsed_s).
+    """
+    adapter = OSWorldAdapter(
+        task_dict=task_cfg,
+        vllm_endpoint=args.backbone_endpoint,
+        vllm_model=args.backbone_model,
+        provider_name=args.provider,
+        os_type=args.os_type,
+        max_steps=args.max_steps,
+        headless=True,
+        cache_dir=args.cache_dir,
+        early_stop_on_repeated_actions=args.early_stop_on_repeated,
+        step_watchdog_seconds=args.step_watchdog,
+        reset_watchdog_seconds=args.reset_watchdog,
+        evaluate_watchdog_seconds=args.evaluate_watchdog,
+        backbone_kind=args.backbone_kind,
+        openai_endpoint=args.openai_endpoint,
+        openai_api_key=args.openai_api_key,
+        openai_model=args.openai_model,
+        agent_max_trajectory_length=args.agent_max_trajectory_length,
+        agent_temperature=temperature,
+        agent_top_p=args.agent_top_p,
+        agent_max_tokens=args.agent_max_tokens,
+        agent_image_detail=args.agent_image_detail or None,
+    )
+    t0 = time.perf_counter()
+    try:
+        traj = adapter.run(prompt)
+        return adapter, traj, None, time.perf_counter() - t0
+    except Exception as e:  # noqa: BLE001
+        logger.exception("rollout crashed")
+        return adapter, None, f"{type(e).__name__}: {e}", time.perf_counter() - t0
+
+
+def _aggregate_task_record(task_id, cfg_path, instruction, label, samples: list) -> dict:
+    """Aggregate N rollout samples of ONE task into a single record.
+
+    samples: list of (traj_or_None, crashed_str_or_None, elapsed_s).
+    final_reward = mean over non-crashed samples (the variance-reduced score
+    used by summarize/should_promote — codex 2026-05-29 eval-noise fix).
+    succeeded = majority of samples scored reward>0 (== reward>0 when n=1).
+    _traj = a FAILED sample's traj when present (for FCVR), else the best.
+    Backbone tokens SUMMED across samples (cost accounting must count all).
+    """
+    rewards = [t.final_reward for (t, c, _) in samples if t is not None and c is None]
+    n_crash = sum(1 for (t, c, _) in samples if t is None or c is not None)
+    crashed = None
+    if not rewards:  # every sample crashed
+        first_crash = next((c for (t, c, _) in samples if c), "all_samples_crashed")
+        return {
+            "task_id": task_id, "task_config_path": str(cfg_path),
+            "instruction": instruction, "phase": label,
+            "elapsed_s": round(max((e for (_, _, e) in samples), default=0.0), 3),
+            "crashed_with": first_crash,
+            "n_steps": 0, "final_reward": None, "succeeded": False,
+            "score": None, "feedback": "(crashed)", "actions": [],
+            "raw_model_texts": [], "n_distinct_actions": 0,
+            "early_stop_reason": None, "reward_source": "crashed_before_eval",
+            "n_samples": len(samples), "sample_rewards": [],
+            "success_fraction": 0.0,
+            "backbone_prompt_tokens": 0, "backbone_completion_tokens": 0,
+            "backbone_reasoning_tokens": 0, "_traj": None,
+        }
+    mean_reward = sum(rewards) / len(rewards)
+    success_fraction = sum(1 for r in rewards if r > 0) / len(rewards)
+    succeeded = success_fraction >= 0.5
+    # representative traj for FCVR: prefer a failed sample (reward==0)
+    valid = [(t, e) for (t, c, e) in samples if t is not None and c is None]
+    rep_traj = None
+    for t, _ in valid:
+        if t.final_reward == 0:
+            rep_traj = t
+            break
+    if rep_traj is None:
+        rep_traj = max(valid, key=lambda te: te[0].final_reward)[0]
+    actions = [(s.action or "")[:200] for s in rep_traj.steps]
+    raws = [(s.raw_model_text or "")[:2000] for s in rep_traj.steps]
+    # Sum backbone tokens across ALL samples (incl. crashed-but-ran ones)
+    bb_in = sum(getattr(t, "backbone_prompt_tokens", 0) for (t, _, _) in samples if t is not None)
+    bb_out = sum(getattr(t, "backbone_completion_tokens", 0) for (t, _, _) in samples if t is not None)
+    bb_reason = sum(getattr(t, "backbone_reasoning_tokens", 0) for (t, _, _) in samples if t is not None)
+    return {
+        "task_id": task_id, "task_config_path": str(cfg_path),
+        "instruction": instruction, "phase": label,
+        "elapsed_s": round(max(e for (_, _, e) in samples), 3),
+        "elapsed_s_sum": round(sum(e for (_, _, e) in samples), 3),
+        "crashed_with": crashed,
+        "n_steps": rep_traj.n_steps,
+        "final_reward": float(mean_reward),
+        "succeeded": succeeded,
+        "n_samples": len(samples),
+        "n_samples_crashed": n_crash,
+        "sample_rewards": [float(r) for r in rewards],
+        "success_fraction": success_fraction,
+        "score": float(mean_reward),
+        "feedback": f"mean_reward={mean_reward:.3f} over {len(rewards)} samples",
+        "actions": actions, "raw_model_texts": raws,
+        "n_distinct_actions": n_distinct(actions),
+        "early_stop_reason": getattr(rep_traj, "early_stop_reason", None),
+        "reward_source": getattr(rep_traj, "reward_source", "unset"),
+        "backbone_prompt_tokens": bb_in,
+        "backbone_completion_tokens": bb_out,
+        "backbone_reasoning_tokens": bb_reason,
+        "_traj": rep_traj,
+    }
+
+
 def evaluate_candidate(
     label: str,
     prompt: StructuredPrompt,
@@ -121,112 +231,113 @@ def evaluate_candidate(
     args,
     stream_out_path: Path | None = None,
     halt_on_task1_crash: bool = False,
+    n_samples: int = 1,
+    temperature: float | None = None,
+    max_parallel: int = 1,
 ) -> list[dict]:
-    """Roll out the candidate on every task in `tasks`. Stream-write partial
-    results to `stream_out_path` for resumability. Returns a list of records
-    (same shape as B2_mini's run_phase records).
+    """Roll out the candidate on every task, n_samples times each, aggregated.
+
+    Codex 2026-05-29 eval-noise fixes:
+      - n_samples > 1: each task evaluated N times, reward = mean (reduces
+        the single-sample stochastic noise that made promotion unreliable).
+      - temperature: per-eval decoding temperature (default args.eval_temperature).
+        Lower temp (0.3) reduces per-rollout variance — the cheap primary fix.
+      - max_parallel > 1: run (task × sample) units concurrently via a thread
+        pool. OSWorld docker provider auto-allocates free ports under a
+        FileLock, and the watchdog kills only the hung rollout's own
+        container, so concurrent containers are safe.
+
+    Returns one aggregated record per task (same downstream shape, plus
+    sample_rewards / success_fraction / n_samples fields).
     """
-    records: list[dict] = []
-    for i, task_entry in enumerate(tasks):
+    from concurrent.futures import ThreadPoolExecutor
+
+    if temperature is None:
+        temperature = getattr(args, "eval_temperature", args.agent_temperature)
+
+    # Pre-load task configs (fail-soft per task).
+    loaded: list[tuple] = []  # (task_id, cfg_path, task_cfg_or_None, load_err)
+    for task_entry in tasks:
         task_id = task_entry.get("id", "<unknown>")
         cfg_path = task_entry.get("task_config_path") or task_entry.get("id")
         try:
-            task_cfg = load_osworld_task_config(cfg_path)
+            loaded.append((task_id, cfg_path, load_osworld_task_config(cfg_path), None))
         except Exception as e:  # noqa: BLE001
             logger.warning("could not load %s: %s", cfg_path, e)
+            loaded.append((task_id, cfg_path, None, f"load_config: {e}"))
+
+    # Build the work list: (task_idx, sample_idx) for every non-load-failed task.
+    work = []
+    for ti, (task_id, cfg_path, task_cfg, load_err) in enumerate(loaded):
+        if load_err is not None:
+            continue
+        for si in range(n_samples):
+            work.append((ti, si))
+
+    logger.info(
+        "--- %s: %d tasks × %d samples = %d rollouts, temp=%.2f, parallel=%d ---",
+        label, len(loaded), n_samples, len(work), temperature, max_parallel,
+    )
+
+    # Run rollouts (parallel or serial). Collect per-(ti) sample lists.
+    samples_by_task: dict[int, list] = {ti: [] for ti in range(len(loaded))}
+
+    def _do(unit):
+        ti, si = unit
+        task_id, cfg_path, task_cfg, _ = loaded[ti]
+        adapter, traj, crashed, elapsed = _one_rollout(task_cfg, args, prompt, temperature)
+        logger.info("  %s task[%d] sample[%d] done reward=%s estop=%s elapsed=%.0fs",
+                    label, ti, si,
+                    (None if traj is None else traj.final_reward),
+                    (None if traj is None else getattr(traj, "early_stop_reason", None)),
+                    elapsed)
+        return ti, (traj, crashed, elapsed)
+
+    if max_parallel > 1 and len(work) > 1:
+        with ThreadPoolExecutor(max_workers=max_parallel) as ex:
+            for ti, sample in ex.map(_do, work):
+                samples_by_task[ti].append(sample)
+    else:
+        for unit in work:
+            ti, sample = _do(unit)
+            samples_by_task[ti].append(sample)
+
+    # Aggregate per task, preserving task order.
+    records: list[dict] = []
+    for ti, (task_id, cfg_path, task_cfg, load_err) in enumerate(loaded):
+        if load_err is not None:
             records.append({
                 "task_id": task_id, "task_config_path": str(cfg_path),
-                "phase": label, "elapsed_s": 0.0,
-                "crashed_with": f"load_config: {e}",
+                "phase": label, "elapsed_s": 0.0, "crashed_with": load_err,
                 "n_steps": 0, "final_reward": None, "succeeded": False,
                 "score": None, "feedback": "(config load failed)",
                 "actions": [], "raw_model_texts": [], "n_distinct_actions": 0,
                 "early_stop_reason": None, "reward_source": "config_load_failed",
-                "_traj": None,
+                "n_samples": 0, "sample_rewards": [], "success_fraction": 0.0,
+                "backbone_prompt_tokens": 0, "backbone_completion_tokens": 0,
+                "backbone_reasoning_tokens": 0, "_traj": None,
             })
             continue
-        logger.info("--- %s task %d/%d : %s ---", label, i + 1, len(tasks), task_id)
-        adapter = OSWorldAdapter(
-            task_dict=task_cfg,
-            vllm_endpoint=args.backbone_endpoint,
-            vllm_model=args.backbone_model,
-            provider_name=args.provider,
-            os_type=args.os_type,
-            max_steps=args.max_steps,
-            headless=True,
-            cache_dir=args.cache_dir,
-            early_stop_on_repeated_actions=args.early_stop_on_repeated,
-            step_watchdog_seconds=args.step_watchdog,
-            reset_watchdog_seconds=args.reset_watchdog,
-            evaluate_watchdog_seconds=args.evaluate_watchdog,
-            # Backbone routing
-            backbone_kind=args.backbone_kind,
-            openai_endpoint=args.openai_endpoint,
-            openai_api_key=args.openai_api_key,
-            openai_model=args.openai_model,
-            agent_max_trajectory_length=args.agent_max_trajectory_length,
-            agent_temperature=args.agent_temperature,
-            agent_top_p=args.agent_top_p,
-            agent_max_tokens=args.agent_max_tokens,
-            agent_image_detail=args.agent_image_detail or None,
+        rec = _aggregate_task_record(
+            task_id, cfg_path, task_cfg.get("instruction"), label,
+            samples_by_task[ti],
         )
-        t0 = time.perf_counter()
-        crashed = None
-        traj = None
-        try:
-            traj = adapter.run(prompt)
-        except Exception as e:  # noqa: BLE001
-            logger.exception("%s task %s crashed", label, task_id)
-            crashed = f"{type(e).__name__}: {e}"
-        rec: dict = {
-            "task_id": task_id, "task_config_path": str(cfg_path),
-            "instruction": task_cfg.get("instruction"),
-            "phase": label,
-            "elapsed_s": round(time.perf_counter() - t0, 3),
-            "crashed_with": crashed,
-        }
-        if traj is not None:
-            score, feedback = adapter.metric(traj)
-            actions = [(s.action or "")[:200] for s in traj.steps]
-            raws = [(s.raw_model_text or "")[:2000] for s in traj.steps]
-            rec.update({
-                "n_steps": traj.n_steps,
-                "final_reward": float(traj.final_reward),
-                "succeeded": traj.succeeded,
-                "score": score, "feedback": feedback,
-                "actions": actions, "raw_model_texts": raws,
-                "n_distinct_actions": n_distinct(actions),
-                "early_stop_reason": getattr(traj, "early_stop_reason", None),
-                "reward_source": getattr(traj, "reward_source", "unset"),
-                # Backbone token usage (codex stop-time review 2026-05-28 fix)
-                "backbone_prompt_tokens": getattr(traj, "backbone_prompt_tokens", 0),
-                "backbone_completion_tokens": getattr(traj, "backbone_completion_tokens", 0),
-                "backbone_reasoning_tokens": getattr(traj, "backbone_reasoning_tokens", 0),
-                "_traj": traj,
-            })
-        else:
-            rec.update({
-                "n_steps": 0, "final_reward": None, "succeeded": False,
-                "score": None, "feedback": "(crashed)", "actions": [],
-                "raw_model_texts": [], "n_distinct_actions": 0,
-                "early_stop_reason": None, "reward_source": "crashed_before_eval",
-                "backbone_prompt_tokens": 0,
-                "backbone_completion_tokens": 0,
-                "backbone_reasoning_tokens": 0,
-                "_traj": None,
-            })
         records.append(rec)
-        if stream_out_path is not None:
-            writable = [{k: v for k, v in r.items() if k != "_traj"} for r in records]
-            stream_out_path.write_text(json.dumps({"phase": label, "tasks": writable}, indent=2, default=str))
         logger.info(
-            "  %s task %s done elapsed=%ss reward=%s distinct=%d estop=%s",
-            label, task_id, rec["elapsed_s"], rec.get("final_reward"),
+            "  %s task %s AGG reward=%s succ_frac=%.2f distinct=%d estop=%s",
+            label, task_id, rec.get("final_reward"), rec.get("success_fraction", 0.0),
             rec.get("n_distinct_actions"), rec.get("early_stop_reason"),
         )
-        if i == 0 and halt_on_task1_crash and crashed:
-            logger.error("🚨 %s task 1 crashed: %s — HALTING per fail-fast", label, crashed)
-            raise SystemExit(2)
+
+    if stream_out_path is not None:
+        writable = [{k: v for k, v in r.items() if k != "_traj"} for r in records]
+        stream_out_path.write_text(json.dumps({"phase": label, "tasks": writable}, indent=2, default=str))
+
+    # Fail-fast: if task 1 fully crashed (all samples) on a halt-guarded eval.
+    if halt_on_task1_crash and records and records[0].get("crashed_with"):
+        logger.error("🚨 %s task 1 crashed: %s — HALTING per fail-fast",
+                     label, records[0]["crashed_with"])
+        raise SystemExit(2)
     return records
 
 
@@ -367,7 +478,28 @@ def main() -> int:
     # T_patch: raised 512 → 1024 on 2026-05-28. Generic 100-tok-per-field patches
     # weren't specific enough; OSWorld backbone uses 1500 max_tokens.
     ap.add_argument("--T_patch", type=int, default=1024)
-    ap.add_argument("--max-iters", type=int, default=8)
+    # max_iters: 8 → 4 on 2026-05-29. B2 smoke iter 2 was already mostly retry;
+    # multi-sample eval triples per-iter cost, so cut iters to pay for it (codex).
+    ap.add_argument("--max-iters", type=int, default=4)
+    # --- Eval-noise controls (codex B2-smoke audit 2026-05-29) -------------
+    # The smoke showed promotion accepting "lucky" children: writer scored 1.0
+    # as a child then 0.0 on identical-prompt re-eval (temp=1.0 single-sample
+    # noise, minibatch was the full set so NOT subsampling bias).
+    ap.add_argument("--eval-temperature", type=float, default=0.3,
+                    help="Decoding temp for ALL eval rollouts (0.3 reduces variance vs "
+                         "OSWorld official 1.0). Cheap primary noise fix.")
+    ap.add_argument("--eval-samples", type=int, default=1,
+                    help="Samples per (prompt,task) for Phase A + Phase F headline; "
+                         "reward = mean. >1 reduces the A->F comparison noise.")
+    ap.add_argument("--promotion-samples", type=int, default=1,
+                    help="Samples per (prompt,task) for the promotion comparison "
+                         "(parent minibatch + children). N=3 is the codex backstop.")
+    ap.add_argument("--max-parallel", type=int, default=1,
+                    help="Concurrent OSWorld containers (auto-port-allocated). "
+                         "featurize 16-core/58GB supports ~4-6. 1 = serial.")
+    ap.add_argument("--final-temp1-check", action="store_true",
+                    help="After the loop, additionally eval vanilla + final prompt at "
+                         "temp=1.0 (OSWorld official) for comparability reporting.")
     # minibatch: raised 5 → 10 on 2026-05-28. B2 proper full's only accept
     # (seed=42 iter 1) was minibatch selection bias (88% → 96% ES regression
     # on full 25). minibatch=10 halves variance; minibatch=25 (full) is the
@@ -527,7 +659,9 @@ def main() -> int:
     logger.info("=== PHASE A: vanilla baseline on %d tasks ===", len(tasks))
     parent_prompt = build_seed_prompt()
     phaseA_path = out_path.with_name(out_path.stem + "_phaseA.json")
-    A_records = evaluate_candidate("A", parent_prompt, tasks, args, phaseA_path, halt_on_task1_crash=True)
+    A_records = evaluate_candidate("A", parent_prompt, tasks, args, phaseA_path,
+                                   halt_on_task1_crash=True,
+                                   n_samples=args.eval_samples, max_parallel=args.max_parallel)
     all_eval_records_for_cost.append(A_records)
     parent_full_records = A_records
     parent_score = score_candidate(parent_full_records)
@@ -572,7 +706,9 @@ def main() -> int:
 
     for iter_k in range(1, args.max_iters + 1):
         logger.info("=== PHASE G iter %d/%d ===", iter_k, args.max_iters)
-        failed_trajs = [r["_traj"] for r in parent_full_records if r.get("_traj") and not r["_traj"].succeeded]
+        # Use the AGGREGATE record's success (mean over samples), not the
+        # representative traj's single-rollout success (codex 2026-05-29).
+        failed_trajs = [r["_traj"] for r in parent_full_records if r.get("_traj") and not r.get("succeeded")]
         iter_rec: dict = {
             "iter": iter_k, "n_failures_input": len(failed_trajs),
             "parent_score_before": list(parent_score),
@@ -642,6 +778,7 @@ def main() -> int:
         parent_stream = out_path.with_name(out_path.stem + f"_iter{iter_k}_parent.json")
         parent_minibatch_records = evaluate_candidate(
             f"G{iter_k}.P", parent_prompt, minibatch_tasks, args, parent_stream,
+            n_samples=args.promotion_samples, max_parallel=args.max_parallel,
         )
         all_eval_records_for_cost.append(parent_minibatch_records)
         parent_minibatch_score = score_candidate(parent_minibatch_records)
@@ -660,7 +797,8 @@ def main() -> int:
             child_prompt.append_patch(scope_guard=p.scope_guard, prompt_diff=p.prompt_diff)
             child_label = f"G{iter_k}.C{i}"
             child_stream = out_path.with_name(out_path.stem + f"_iter{iter_k}_child{i}.json")
-            child_recs = evaluate_candidate(child_label, child_prompt, minibatch_tasks, args, child_stream)
+            child_recs = evaluate_candidate(child_label, child_prompt, minibatch_tasks, args, child_stream,
+                                            n_samples=args.promotion_samples, max_parallel=args.max_parallel)
             all_eval_records_for_cost.append(child_recs)
             children_full_records.append(child_recs)
             child_score = score_candidate(child_recs)
@@ -701,7 +839,8 @@ def main() -> int:
             logger.info("  iter %d: ACCEPT child %d (%s) — re-evaluating new parent on full %d tasks",
                         iter_k, best_idx, reason, len(tasks))
             full_stream = out_path.with_name(out_path.stem + f"_iter{iter_k}_full.json")
-            parent_full_records = evaluate_candidate(f"G{iter_k}.FULL", parent_prompt, tasks, args, full_stream)
+            parent_full_records = evaluate_candidate(f"G{iter_k}.FULL", parent_prompt, tasks, args, full_stream,
+                                                     n_samples=args.eval_samples, max_parallel=args.max_parallel)
             all_eval_records_for_cost.append(parent_full_records)
             parent_score = score_candidate(parent_full_records)
             iter_rec["new_parent_full_score"] = list(parent_score)
@@ -748,6 +887,13 @@ def main() -> int:
     # --- Headline paper metrics --------------------------------------------
     a_by_id = {r["task_id"]: r for r in A_records}
     loop_escape = []
+    # success_delta: per-task Phase F success_fraction − Phase A success_fraction.
+    # The strong-backbone headline (codex 2026-05-29): with gpt-5.5 there are
+    # no click-loops to escape (early-stop ~0%), so loop_escape is inapplicable;
+    # task SUCCESS improvement is the real signal. With multi-sample,
+    # success_fraction ∈ [0,1] per task gives a graded, lower-variance metric.
+    success_deltas = []
+    task_success_improved = []
     for r in F_records:
         ra = a_by_id.get(r["task_id"])
         if ra is None:
@@ -756,6 +902,12 @@ def main() -> int:
         f_loop = (r.get("early_stop_reason") or "").startswith("repeated_actions_")
         if a_loop and not f_loop:
             loop_escape.append(r["task_id"])
+        a_sf = ra.get("success_fraction", 1.0 if ra.get("succeeded") else 0.0)
+        f_sf = r.get("success_fraction", 1.0 if r.get("succeeded") else 0.0)
+        success_deltas.append(f_sf - a_sf)
+        if f_sf > a_sf:
+            task_success_improved.append(r["task_id"])
+    mean_success_delta = (sum(success_deltas) / len(success_deltas)) if success_deltas else 0.0
 
     elapsed_total = round(time.perf_counter() - t_total, 3)
     finished = datetime.datetime.utcnow().isoformat() + "Z"
@@ -818,6 +970,11 @@ def main() -> int:
             "early_stop_on_repeated": args.early_stop_on_repeated,
             "step_watchdog": args.step_watchdog,
             "rng_seed": args.rng_seed,
+            # Eval-noise controls (codex 2026-05-29)
+            "eval_temperature": args.eval_temperature,
+            "eval_samples": args.eval_samples,
+            "promotion_samples": args.promotion_samples,
+            "max_parallel": args.max_parallel,
         },
         "phaseA_vanilla": {
             "summary": A_summary,
@@ -836,8 +993,17 @@ def main() -> int:
             "phase_F_success_rate": F_summary["success_rate"],
             "phase_F_mean_reward": F_summary["mean_reward"],
             "phase_F_early_stop_rate": F_summary["early_stop_rate"],
+            # HEADLINE (strong-backbone regime, codex 2026-05-29): success-based
+            # improvement. success_delta = Phase F − Phase A reward; the
+            # variance-controlled A→F gain is the real positive-result signal.
+            "success_delta_mean_reward": F_summary["mean_reward"] - A_summary["mean_reward"],
+            "success_delta_rate": F_summary["success_rate"] - A_summary["success_rate"],
+            "mean_per_task_success_fraction_delta": mean_success_delta,
+            "tasks_success_improved": task_success_improved,
+            "n_tasks_success_improved": len(task_success_improved),
             # promoted_loop_escape = tasks where Phase A early-stopped AND
             # Phase F (post-GEPA, accepted-only) did not. Final-policy effect.
+            # LEGACY metric — inapplicable to strong backbones (early-stop ~0%).
             "promoted_loop_escape_count": len(loop_escape),
             "promoted_loop_escape_task_ids": loop_escape,
             # best_child_loop_escape = tasks where Phase A early-stopped AND
