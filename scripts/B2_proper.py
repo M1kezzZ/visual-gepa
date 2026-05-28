@@ -158,6 +158,16 @@ def evaluate_candidate(
             step_watchdog_seconds=args.step_watchdog,
             reset_watchdog_seconds=args.reset_watchdog,
             evaluate_watchdog_seconds=args.evaluate_watchdog,
+            # Backbone routing
+            backbone_kind=args.backbone_kind,
+            openai_endpoint=args.openai_endpoint,
+            openai_api_key=args.openai_api_key,
+            openai_model=args.openai_model,
+            agent_max_trajectory_length=args.agent_max_trajectory_length,
+            agent_temperature=args.agent_temperature,
+            agent_top_p=args.agent_top_p,
+            agent_max_tokens=args.agent_max_tokens,
+            agent_image_detail=args.agent_image_detail or None,
         )
         t0 = time.perf_counter()
         crashed = None
@@ -296,32 +306,77 @@ def main() -> int:
     load_dotenv()
     ap = argparse.ArgumentParser(description="B2 proper — multi-iter GEPA-lite with FCVR")
     ap.add_argument("--tasks", required=True, help="Task set JSON (e.g. configs/osworld_b2_25.json)")
+    # Backbone: choose vllm (self-hosted) OR openai_api (anyaigc / direct)
+    ap.add_argument("--backbone-kind", default="openai_api", choices=["vllm", "openai_api"],
+                    help="vllm = self-hosted Qwen via vLLM (legacy); "
+                         "openai_api = anyaigc / OpenAI / Anthropic OpenAI-compat (new default 2026-05-28)")
+    # vLLM args (legacy path)
     ap.add_argument("--backbone-endpoint", default=os.environ.get("VLLM_BASE_URL", "http://127.0.0.1:8000/v1"))
     ap.add_argument("--backbone-model", default=os.environ.get("VLLM_MODEL_NAME", "/root/models/Qwen3.5-9B"))
+    # openai_api args (new path)
+    ap.add_argument("--openai-endpoint", default=os.environ.get("OPENAI_BASE_URL", "https://anyaigc.com/v1"),
+                    help="OpenAI-compatible base URL (anyaigc.com/v1 default)")
+    ap.add_argument("--openai-api-key", default=os.environ.get("OPENAI_API_KEY"),
+                    help="API key for the openai_api backbone (env OPENAI_API_KEY by default)")
+    ap.add_argument("--openai-model", default="gpt-5.5",
+                    help="Backbone model id (gpt-5.5 default, holds 78.7pct on OSWorld-Verified May 2026)")
+    ap.add_argument("--agent-max-trajectory-length", type=int, default=3,
+                    help="OSWorld official default 3 (max history pairs kept)")
+    ap.add_argument("--agent-temperature", type=float, default=1.0,
+                    help="OSWorld official default 1.0")
+    ap.add_argument("--agent-top-p", type=float, default=0.9,
+                    help="OSWorld official default 0.9")
+    ap.add_argument("--agent-max-tokens", type=int, default=1500,
+                    help="OSWorld official default 1500 (completion budget)")
+    ap.add_argument("--agent-image-detail", default="", choices=["", "low", "high"],
+                    help="OpenAI vision detail; empty lets provider decide")
     ap.add_argument("--provider", default="docker")
     ap.add_argument("--os-type", default="Ubuntu")
-    ap.add_argument("--max-steps", type=int, default=15)
+    # max_steps: changed default 15 → 50 on 2026-05-28. OSWorld original
+    # benchmark used 15 but OSWorld-Verified leaderboard models routinely run
+    # at 50 (o3 saw 9.1% → 23% jump with bigger budget). early_stop=5 keeps
+    # click-loop tasks bounded so 50 is just the ceiling, not the typical run.
+    ap.add_argument("--max-steps", type=int, default=50,
+                    help="Max steps per task; 50 is the modern OSWorld-Verified convention")
     ap.add_argument("--rng-seed", type=int, required=True)
     ap.add_argument("--cache-dir", default=None)
-    ap.add_argument("--early-stop-on-repeated", type=int, default=3)
+    # early_stop_on_repeated_actions: raised 3 → 5 on 2026-05-28. N=3 was too
+    # aggressive and cut effective trajectory to ~5 steps; N=5 keeps the
+    # click-loop guard while giving the agent room to recover.
+    ap.add_argument("--early-stop-on-repeated", type=int, default=5)
     ap.add_argument("--step-watchdog", type=int, default=180)
     ap.add_argument("--reset-watchdog", type=int, default=600)
     ap.add_argument("--evaluate-watchdog", type=int, default=60)
     ap.add_argument("--reflection-model", default=os.environ.get("REFLECTION_MODEL", DEFAULT_REFLECTION_MODEL))
     ap.add_argument("--clip-model", default="openai/clip-vit-base-patch32")
     ap.add_argument("--clip-device", default=None)
-    ap.add_argument("--K", type=int, default=DEFAULT_BUDGET.K)
+    # K: lowered 4 → 2 on 2026-05-28. B2 proper full found cluster_interpretable
+    # = False across all 24 calls (silhouette ≤ 0.29); failures on OSWorld are
+    # too homogeneous in CLIP space for K=4. K=2 makes it explicit.
+    ap.add_argument("--K", type=int, default=2)
     ap.add_argument("--J", type=int, default=DEFAULT_BUDGET.J)
     ap.add_argument("--M", type=int, default=DEFAULT_BUDGET.M)
-    ap.add_argument("--T_patch", type=int, default=DEFAULT_BUDGET.T_patch)
+    # T_patch: raised 512 → 1024 on 2026-05-28. Generic 100-tok-per-field patches
+    # weren't specific enough; OSWorld backbone uses 1500 max_tokens.
+    ap.add_argument("--T_patch", type=int, default=1024)
     ap.add_argument("--max-iters", type=int, default=8)
-    ap.add_argument("--minibatch-size", type=int, default=5)
+    # minibatch: raised 5 → 10 on 2026-05-28. B2 proper full's only accept
+    # (seed=42 iter 1) was minibatch selection bias (88% → 96% ES regression
+    # on full 25). minibatch=10 halves variance; minibatch=25 (full) is the
+    # ideal but costs 5× more.
+    ap.add_argument("--minibatch-size", type=int, default=10)
     ap.add_argument("--min-failures-for-fcvr", type=int, default=3)
     ap.add_argument("--accept-epsilon", type=float, default=0.0,
                     help="child must beat parent on minibatch by > epsilon (default 0.0 = strict gt)")
     ap.add_argument("--output", required=True)
     ap.add_argument("--manifest", default=None)
     args = ap.parse_args()
+
+    if args.backbone_kind == "openai_api" and not args.openai_api_key:
+        raise SystemExit(
+            "ERROR: --openai-api-key not set (or env OPENAI_API_KEY missing). "
+            "Required for backbone_kind=openai_api."
+        )
 
     out_path = Path(args.output); out_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path = Path(args.manifest) if args.manifest else out_path.with_name(out_path.stem + "_manifest.json")
@@ -332,9 +387,15 @@ def main() -> int:
         experiment_id=f"B2_proper_seed{args.rng_seed}_{datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}",
         block="B2",
     )
+    if args.backbone_kind == "openai_api":
+        backbone_cmd = f"openai_api endpoint={args.openai_endpoint} model={args.openai_model}"
+        model_path_for_manifest = args.openai_model
+    else:
+        backbone_cmd = f"endpoint={args.backbone_endpoint} model={args.backbone_model}"
+        model_path_for_manifest = args.backbone_model
     m.start(
-        vllm_cmd=f"endpoint={args.backbone_endpoint} model={args.backbone_model}",
-        model_path=args.backbone_model,
+        vllm_cmd=backbone_cmd,
+        model_path=model_path_for_manifest,
         qcow2_path=(str(Path(args.cache_dir) / "docker_vm_data" / "Ubuntu.qcow2") if args.cache_dir else ""),
         config_path=args.tasks,
         seed=args.rng_seed,
@@ -571,7 +632,20 @@ def main() -> int:
         "config": {
             "tasks_config": args.tasks,
             "n_tasks": len(tasks),
-            "backbone_model": args.backbone_model,
+            "backbone_kind": args.backbone_kind,
+            "backbone_model": (
+                args.openai_model if args.backbone_kind == "openai_api"
+                else args.backbone_model
+            ),
+            "backbone_endpoint": (
+                args.openai_endpoint if args.backbone_kind == "openai_api"
+                else args.backbone_endpoint
+            ),
+            "agent_max_trajectory_length": args.agent_max_trajectory_length,
+            "agent_temperature": args.agent_temperature,
+            "agent_top_p": args.agent_top_p,
+            "agent_max_tokens": args.agent_max_tokens,
+            "agent_image_detail": args.agent_image_detail,
             "reflection_model": args.reflection_model,
             "K": args.K, "J": args.J, "M": args.M, "T_patch": args.T_patch,
             "max_iters": args.max_iters,

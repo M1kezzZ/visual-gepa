@@ -277,6 +277,183 @@ class _VLLMAgent:
         return text
 
 
+# --- OpenAI-compatible API agent (anyaigc / direct OpenAI / direct Anthropic) ---
+#
+# Drop-in replacement for `_VLLMAgent` when we want a frontier-model backbone
+# instead of self-hosted Qwen. Added 2026-05-28 after B2 proper full found
+# Qwen3.5-9B at 1.3% Phase A success on our 25 tasks — far below the 41.8%
+# HF-reported number, suggesting Qwen at this scale is the capability
+# bottleneck. GPT-5.5 holds 78.7% on OSWorld-Verified (May 2026 leaderboard).
+#
+# Key differences from `_VLLMAgent`:
+#   * No `extra_body={"chat_template_kwargs": {"enable_thinking": False}}`
+#     (that's Qwen-specific; GPT-5.5 uses reasoning by design).
+#   * Uses anyaigc.com base URL with the user-provided API key by default.
+#   * System prompt mirrors OSWorld's official `SYS_PROMPT_IN_BOTH_OUT_CODE`
+#     for max comparability with leaderboard numbers.
+#   * History truncation governed by `max_history_steps` (OSWorld official
+#     `max_trajectory_length=3`).
+#
+class OpenAIAgent:
+    """OpenAI-compatible backbone (anyaigc proxy or direct OpenAI/Anthropic).
+
+    Args:
+        endpoint: e.g. https://anyaigc.com/v1
+        api_key: API key
+        model: e.g. "gpt-5.5", "claude-opus-4-7"
+        system_prompt: full system message
+        instruction: per-task instruction (rendered into every user turn)
+        max_history_steps: keep last N agent/env turn pairs in context.
+            OSWorld official default is 3 (max_trajectory_length=3).
+        temperature: OSWorld official default 1.0
+        top_p: OSWorld official default 0.9
+        max_tokens: completion budget (output side); OSWorld official 1500
+        image_detail: OpenAI vision "low" | "high" | None (default).
+            None lets the provider decide. Claude ignores this field.
+    """
+
+    def __init__(
+        self,
+        endpoint: str,
+        api_key: str,
+        model: str,
+        system_prompt: str,
+        instruction: str,
+        max_history_steps: int = 3,
+        temperature: float = 1.0,
+        top_p: float = 0.9,
+        max_tokens: int = 1500,
+        image_detail: str | None = None,
+    ) -> None:
+        from openai import OpenAI
+
+        self._client = OpenAI(base_url=endpoint, api_key=api_key)
+        self.model = model
+        self.system_prompt = system_prompt
+        self.instruction = instruction
+        self.max_history_steps = max_history_steps
+        self.temperature = temperature
+        self.top_p = top_p
+        self.max_tokens = max_tokens
+        self.image_detail = image_detail
+        self._history: list[dict] = []
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
+        self.total_reasoning_tokens = 0
+
+    def step(self, screenshot: Image.Image, accessibility_tree: str) -> str:
+        """Send the current observation; return raw model text."""
+        # Truncate history per OSWorld official: only last N user/assistant pairs.
+        keep = self._history[-(2 * self.max_history_steps):]
+
+        image_block: dict = {
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{_pil_to_b64_png(screenshot)}"},
+        }
+        if self.image_detail in {"low", "high"}:
+            image_block["image_url"]["detail"] = self.image_detail
+
+        user_content = [
+            {
+                "type": "text",
+                "text": (
+                    f"Task instruction: {self.instruction}\n\n"
+                    f"Accessibility tree (truncated to 2000 chars):\n"
+                    f"{accessibility_tree[:2000]}\n\n"
+                    "Reply with ONE pyautogui action in a single ```python ... ``` "
+                    "code block, OR the literal token DONE / FAIL / WAIT in its "
+                    "own code block, per the system prompt."
+                ),
+            },
+            image_block,
+        ]
+
+        messages = (
+            [{"role": "system", "content": self.system_prompt}]
+            + keep
+            + [{"role": "user", "content": user_content}]
+        )
+
+        kwargs: dict = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": self.max_tokens,
+        }
+        # Some reasoning models (gpt-5-pro, o-series) reject temperature/top_p.
+        # Use a try/except cascade so the adapter degrades gracefully if so.
+        try:
+            kwargs["temperature"] = self.temperature
+            kwargs["top_p"] = self.top_p
+            resp = self._client.chat.completions.create(**kwargs)
+        except Exception as e:  # noqa: BLE001
+            if "temperature" in str(e).lower() or "top_p" in str(e).lower():
+                kwargs.pop("temperature", None)
+                kwargs.pop("top_p", None)
+                logger.warning("backbone rejected temp/top_p, retrying without: %s", e)
+                resp = self._client.chat.completions.create(**kwargs)
+            else:
+                raise
+
+        text = resp.choices[0].message.content or ""
+        # Track token usage for cost accounting.
+        usage = getattr(resp, "usage", None)
+        if usage:
+            self.total_prompt_tokens += getattr(usage, "prompt_tokens", 0) or 0
+            self.total_completion_tokens += getattr(usage, "completion_tokens", 0) or 0
+            details = getattr(usage, "completion_tokens_details", None)
+            if details:
+                self.total_reasoning_tokens += getattr(details, "reasoning_tokens", 0) or 0
+
+        # Update history (drop image to save context tokens; keep terse user/agent
+        # exchange so the agent knows what it tried).
+        self._history.append({
+            "role": "user",
+            "content": (
+                f"Task: {self.instruction}\n"
+                f"(screenshot at step {len(self._history) // 2 + 1} omitted from history)"
+            ),
+        })
+        self._history.append({"role": "assistant", "content": text})
+        return text
+
+
+# --- OSWorld official-style system prompt ---------------------------------------
+# Mirrors `mm_agents/prompts.py` SYS_PROMPT_IN_BOTH_OUT_CODE so backbone behavior
+# matches OSWorld leaderboard convention as closely as possible.
+OSWORLD_OFFICIAL_SYSTEM_PROMPT = (
+    "You are an agent which follow my instruction and perform desktop computer tasks "
+    "as instructed.\n"
+    "You have good knowledge of computer and good internet connection and assume "
+    "your code will run on a computer for controlling the mouse and keyboard.\n"
+    "For each step, you will get an observation of the desktop by 1) a screenshot; "
+    "and 2) accessibility tree, which is based on AT-SPI library. And you will "
+    "predict the action of the computer based on the screenshot and accessibility "
+    "tree.\n\n"
+    "You are required to use `pyautogui` to perform the action grounded to the "
+    "observation, but DONT use the `pyautogui.locateCenterOnScreen` function to "
+    "locate the element you want to operate with since we have no image of the "
+    "element you want to operate with. DONT USE `pyautogui.screenshot()` to make "
+    "screenshot.\n"
+    "Return one line or multiple lines of python code to perform the action each "
+    "time, be time efficient. When predicting multiple lines of code, make some "
+    "small sleep like `time.sleep(0.5);` interval so that the machine could take "
+    "break between actions. You need to to specify the coordinates of by yourself "
+    "based on your observation of current observation, but you should be careful "
+    "to ensure that the coordinates are correct.\n\n"
+    "You ONLY need to return the code inside a code block, like this:\n"
+    "```python\n"
+    "# your code here\n"
+    "```\n\n"
+    "Specially, it is also allowed to return the following special code:\n"
+    "When you think you have to wait for some time, return ```WAIT```\n"
+    "When you think the task can not be done, return ```FAIL```, don't easily say "
+    "`FAIL`, try your best to do the task.\n"
+    "When you think the task is done, return ```DONE```.\n\n"
+    "My computer's password is 'password', feel free to use it when you need sudo "
+    "rights."
+)
+
+
 # --- Public adapter --------------------------------------------------------
 DEFAULT_TASK_ROOT = Path(__file__).resolve().parents[1] / "third_party" / "OSWorld" / "evaluation_examples" / "examples"
 
@@ -340,6 +517,21 @@ class OSWorldAdapter:
         step_watchdog_seconds: int = 180,
         reset_watchdog_seconds: int = 600,
         evaluate_watchdog_seconds: int = 60,
+        # --- Backbone selection (added 2026-05-28) -----------------------------
+        # backbone_kind: "vllm" (self-hosted) or "openai_api" (anyaigc / OpenAI /
+        # Anthropic via OpenAI-compatible proxy). Default stays "vllm" for
+        # backward compat with B0/B1/B2 mini/B2 proper full runs. New
+        # experiments should pass backbone_kind="openai_api" + the openai_* args.
+        backbone_kind: str = "vllm",
+        openai_endpoint: str | None = None,
+        openai_api_key: str | None = None,
+        openai_model: str | None = None,
+        agent_max_trajectory_length: int = 3,
+        agent_temperature: float = 1.0,
+        agent_top_p: float = 0.9,
+        agent_max_tokens: int = 1500,
+        agent_image_detail: str | None = None,
+        agent_system_prompt: str | None = None,
     ) -> None:
         if task_config_path is None and task_dict is None:
             raise ValueError("provide either task_config_path or task_dict")
@@ -368,6 +560,25 @@ class OSWorldAdapter:
         self.step_watchdog_seconds = step_watchdog_seconds
         self.reset_watchdog_seconds = reset_watchdog_seconds
         self.evaluate_watchdog_seconds = evaluate_watchdog_seconds
+        # Backbone selection
+        if backbone_kind not in {"vllm", "openai_api"}:
+            raise ValueError(f"backbone_kind must be 'vllm' or 'openai_api', got {backbone_kind!r}")
+        self.backbone_kind = backbone_kind
+        self.openai_endpoint = openai_endpoint
+        self.openai_api_key = openai_api_key
+        self.openai_model = openai_model
+        self.agent_max_trajectory_length = agent_max_trajectory_length
+        self.agent_temperature = agent_temperature
+        self.agent_top_p = agent_top_p
+        self.agent_max_tokens = agent_max_tokens
+        self.agent_image_detail = agent_image_detail
+        self.agent_system_prompt = agent_system_prompt
+        if backbone_kind == "openai_api":
+            if not openai_endpoint or not openai_api_key or not openai_model:
+                raise ValueError(
+                    "backbone_kind='openai_api' requires openai_endpoint, "
+                    "openai_api_key, and openai_model"
+                )
         # OSWorld DesktopEnv defaults `cache_dir` to "cache" (relative to CWD)
         # and downloads Ubuntu.qcow2.zip to `./docker_vm_data` (also relative).
         # Pin both to an absolute path so re-runs from different working
@@ -424,13 +635,42 @@ class OSWorldAdapter:
         assert env is not None
 
         # Render the structured prompt as the agent's system message.
-        system_prompt = prompt.render()
-        agent = _VLLMAgent(
-            endpoint=self.vllm_endpoint,
-            model=self.vllm_model,
-            system_prompt=system_prompt,
-            instruction=self.instruction,
-        )
+        # For openai_api backbone, we PRE-PEND OSWorld's official system prompt
+        # (or a user-supplied one) so vision-language agents that haven't been
+        # fine-tuned on our SEED_PROMPT still know the action vocabulary.
+        rendered_prompt = prompt.render()
+        if self.backbone_kind == "vllm":
+            agent = _VLLMAgent(
+                endpoint=self.vllm_endpoint,
+                model=self.vllm_model,
+                system_prompt=rendered_prompt,
+                instruction=self.instruction,
+            )
+        else:  # openai_api
+            base_sys = self.agent_system_prompt or OSWORLD_OFFICIAL_SYSTEM_PROMPT
+            # Append our structured prompt (persona / global_rules / patches /
+            # task_scaffold) AFTER the official system prompt so frontier
+            # backbones get OSWorld's official action vocabulary first, then
+            # our research-side prompt patches.
+            combined_sys = (
+                f"{base_sys}\n\n"
+                "---\n"
+                "Additional research-side instructions (Visual-GEPA "
+                "structured prompt):\n\n"
+                f"{rendered_prompt}"
+            )
+            agent = OpenAIAgent(
+                endpoint=self.openai_endpoint,
+                api_key=self.openai_api_key,
+                model=self.openai_model,
+                system_prompt=combined_sys,
+                instruction=self.instruction,
+                max_history_steps=self.agent_max_trajectory_length,
+                temperature=self.agent_temperature,
+                top_p=self.agent_top_p,
+                max_tokens=self.agent_max_tokens,
+                image_detail=self.agent_image_detail,
+            )
 
         traj = MultimodalTrajectory(
             task_id=self.task_id,

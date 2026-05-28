@@ -29,7 +29,11 @@ from .structured_prompt import StructuredPrompt
 logger = logging.getLogger(__name__)
 
 DEFAULT_REFLECTION_MODEL = "claude-opus-4-7"  # Claude Opus 4.7 vision (current API id)
-DEFAULT_MAX_OUTPUT_TOKENS = 512
+# Raised from 512 → 1024 on 2026-05-28 per B2 proper full audit: short patches
+# (~100 tok/field × 5 fields) were generic "verify after click" advice rather
+# than task-specific actionable instructions. OSWorld backbone uses max_tokens=
+# 1500; reflection output should be at least comparable.
+DEFAULT_MAX_OUTPUT_TOKENS = 1024
 
 
 SYSTEM_PROMPT = """You are a research assistant for Visual-GEPA — an automated
