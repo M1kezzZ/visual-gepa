@@ -386,6 +386,14 @@ def main() -> int:
                     help="USD per 1M reflection INPUT tokens (claude-opus-4-7 list 5)")
     ap.add_argument("--reflection-output-cost-per-mtok", type=float, default=25.0,
                     help="USD per 1M reflection OUTPUT tokens (claude-opus-4-7 list 25)")
+    # SwanLab experiment tracking (added 2026-05-29). Auto-logs scalar metrics +
+    # GPU/CPU/RAM (Nvidia / MetaX / Ascend / etc.). Opt-out via --swanlab-disabled.
+    ap.add_argument("--swanlab-project", default="visual-gepa",
+                    help="SwanLab project name (default: visual-gepa)")
+    ap.add_argument("--swanlab-experiment", default=None,
+                    help="SwanLab experiment name (default: derived from --output filename)")
+    ap.add_argument("--swanlab-mode", default="cloud", choices=["cloud", "offline", "local", "disabled"],
+                    help="SwanLab logging mode. 'cloud'=sync to swanlab.cn; 'disabled'=off")
     ap.add_argument("--output", required=True)
     ap.add_argument("--manifest", default=None)
     args = ap.parse_args()
@@ -395,6 +403,49 @@ def main() -> int:
             "ERROR: --openai-api-key not set (or env OPENAI_API_KEY missing). "
             "Required for backbone_kind=openai_api."
         )
+
+    # --- SwanLab init (codex stop-time hardening 2026-05-29) ----------------
+    # Wrap import + init in try/except so an absent swanlab pkg or bad key
+    # doesn't kill the experiment. We log via global swanlab.log() throughout.
+    swanlab_active = False
+    if args.swanlab_mode != "disabled":
+        try:
+            import swanlab
+            exp_name = args.swanlab_experiment or Path(args.output).stem
+            sl_key = os.environ.get("SWANLAB_API_KEY")
+            if args.swanlab_mode == "cloud" and not sl_key:
+                logger.warning("SWANLAB_API_KEY not set; falling back to swanlab-mode=offline")
+                args.swanlab_mode = "offline"
+            swanlab.init(
+                project=args.swanlab_project,
+                experiment_name=exp_name,
+                mode=args.swanlab_mode,
+                config=vars(args),
+                description=(
+                    f"B2 proper {exp_name} | backbone={args.backbone_kind}:"
+                    f"{args.openai_model if args.backbone_kind == 'openai_api' else args.backbone_model} | "
+                    f"seed={args.rng_seed} | max_iters={args.max_iters} K={args.K} "
+                    f"max_steps={args.max_steps} minibatch={args.minibatch_size}"
+                ),
+            )
+            swanlab_active = True
+            logger.info("swanlab initialized: project=%s mode=%s exp=%s", args.swanlab_project, args.swanlab_mode, exp_name)
+        except ImportError:
+            logger.warning("swanlab package not installed — skipping experiment tracking")
+        except Exception as e:  # noqa: BLE001
+            logger.warning("swanlab init failed (%s) — continuing without tracking", e)
+
+    def sl_log(d: dict, step: int | None = None) -> None:
+        """Log dict to swanlab if active. No-op otherwise."""
+        if not swanlab_active:
+            return
+        try:
+            if step is not None:
+                swanlab.log(d, step=step)
+            else:
+                swanlab.log(d)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("swanlab.log failed: %s", e)
 
     out_path = Path(args.output); out_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path = Path(args.manifest) if args.manifest else out_path.with_name(out_path.stem + "_manifest.json")
@@ -455,6 +506,16 @@ def main() -> int:
         sum(r.get("succeeded", False) for r in A_records), len(A_records),
         parent_score[0], 100 * (1 - parent_score[2]),
     )
+    # Log phase A summary to swanlab (codex stop-time fix 2026-05-29)
+    _a_sum = summarize(A_records)
+    sl_log({
+        "phaseA/success_rate": _a_sum["success_rate"],
+        "phaseA/mean_reward": _a_sum["mean_reward"],
+        "phaseA/early_stop_rate": _a_sum["early_stop_rate"],
+        "phaseA/mean_distinct_actions": _a_sum["mean_distinct_actions"],
+        "phaseA/n_completed": _a_sum["n_completed"],
+        "phaseA/n_succeeded": _a_sum["n_succeeded"],
+    }, step=0)
 
     # --- PHASE G (GEPA-lite loop) ------------------------------------------
     iter_history: list[dict] = []
@@ -624,6 +685,26 @@ def main() -> int:
                 if mset:
                     rejected_member_sets.append(mset)
         iter_history.append(iter_rec)
+        # Log iter summary to swanlab (codex stop-time fix 2026-05-29).
+        # step=iter_k so plots show per-iter trajectory cleanly.
+        _decision = iter_rec.get("decision", "")
+        sl_log({
+            f"iter/n_failures_input": iter_rec.get("n_failures_input", 0),
+            f"iter/n_patches_proposed": iter_rec.get("n_patches_proposed", 0),
+            f"iter/n_patches_after_dedup": iter_rec.get("n_patches_after_dedup", 0),
+            f"iter/n_patches_skipped_as_rejected_dup": iter_rec.get("n_patches_skipped_as_rejected_dup", 0),
+            f"iter/fcvr_silhouette": iter_rec.get("fcvr_silhouette") or 0.0,
+            f"iter/cluster_interpretable": int(bool(iter_rec.get("cluster_interpretable"))),
+            f"iter/decision_accept": int(_decision == "accept_child"),
+            f"iter/decision_reject": int(_decision == "reject_no_child_better"),
+            f"iter/decision_skip": int("skip" in _decision),
+            f"iter/parent_minibatch_reward": (iter_rec.get("parent_minibatch_summary") or {}).get("mean_reward", 0.0),
+            f"iter/parent_minibatch_succ_rate": (iter_rec.get("parent_minibatch_summary") or {}).get("success_rate", 0.0),
+            f"iter/best_child_score_reward": (iter_rec.get("best_child_score") or [0])[0] if iter_rec.get("best_child_score") else 0,
+            f"iter/fcvr_input_tokens_this_iter": iter_rec.get("fcvr_input_tokens", 0),
+            f"iter/fcvr_output_tokens_this_iter": iter_rec.get("fcvr_output_tokens", 0),
+            f"iter/cum_accepts": accepted_children,
+        }, step=iter_k)
 
     # --- PHASE F (final eval) ----------------------------------------------
     logger.info("=== PHASE F: final eval of best parent on %d tasks ===", len(tasks))
@@ -783,6 +864,36 @@ def main() -> int:
     )
     m.write(manifest_path)
     logger.info("wrote manifest %s", manifest_path)
+
+    # Final headline + cost log to swanlab (codex stop-time fix 2026-05-29).
+    # step=max_iters+1 places these AFTER all per-iter points on the timeline.
+    final_step = args.max_iters + 1
+    sl_log({
+        "final/phase_A_success_rate": A_summary["success_rate"],
+        "final/phase_A_mean_reward": A_summary["mean_reward"],
+        "final/phase_A_early_stop_rate": A_summary["early_stop_rate"],
+        "final/phase_F_success_rate": F_summary["success_rate"],
+        "final/phase_F_mean_reward": F_summary["mean_reward"],
+        "final/phase_F_early_stop_rate": F_summary["early_stop_rate"],
+        "final/promoted_loop_escape_count": len(loop_escape),
+        "final/best_child_loop_escape_count": len(best_child_loop_escape_set),
+        "final/gepa_iters_accepted": accepted_children,
+        "final/gepa_iters_attempted": args.max_iters,
+        "final/n_patches_in_final_prompt": len(parent_prompt.behavioral_patches),
+        "cost/backbone_input_tokens": bb_in,
+        "cost/backbone_output_tokens": bb_out,
+        "cost/backbone_reasoning_tokens": bb_reason,
+        "cost/backbone_cost_usd": backbone_cost_usd,
+        "cost/reflection_input_tokens": total_fcvr_input_tokens,
+        "cost/reflection_output_tokens": total_fcvr_output_tokens,
+        "cost/reflection_cost_usd": reflection_cost_usd,
+        "cost/total_cost_usd": cost_usd,
+    }, step=final_step)
+    if swanlab_active:
+        try:
+            swanlab.finish()
+        except Exception as e:  # noqa: BLE001
+            logger.warning("swanlab.finish failed: %s", e)
 
     return 0 if overall["pass_criteria_met"]["overall"] else 2
 
