@@ -1011,6 +1011,15 @@ def main() -> int:
             "summary": F_summary,
             "tasks": [{k: v for k, v in r.items() if k != "_traj"} for r in F_records],
             "n_patches_in_final_prompt": len(parent_prompt.behavioral_patches),
+            # Persist the FULL evolved prompt so a decisive seed-vs-evolved
+            # re-test is reproducible (2026-05-29: the pilot only stored
+            # truncated failure_patterns, so its evolved prompt was unrecoverable).
+            "evolved_prompt_rendered": parent_prompt.render(),
+            "evolved_prompt_patches": [
+                {"scope_guard": sg, "prompt_diff": pd}
+                for (sg, pd) in parent_prompt.behavioral_patches
+            ],
+            "seed_prompt_rendered": build_seed_prompt().render(),
         },
         "paper_metrics": {
             "phase_A_success_rate": A_summary["success_rate"],
